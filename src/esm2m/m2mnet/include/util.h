@@ -1,0 +1,120 @@
+/*******************************************************************************
+
+    This file is part of the debug.c.
+    Copyright m2m.com
+    All right reserved.
+
+    File:    debug.c
+
+    No description
+
+    TIME LIST:
+    CREATE  skyli   2017-05-06 13:47:55
+
+*******************************************************************************/
+#ifndef _util_h_
+
+#define _util_h_
+#include "m2m_type.h"
+#include "m2m.h"
+/** define tools *****/
+#define _RETURN_VOID_EQUAL(n,c)   do{if( n == c ) return;}while(0)
+#define _RETURN_VOID_EQUAL_0(n)   _RETURN_VOID_EQUAL(n,0)
+
+#define _RETURN_UNEQUAL(n,c,r)      do{if( n != c ) return r;}while(0)
+#define _RETURN_UNEQUAL_0(n,r)      _RETURN_UNEQUAL(n,0,r)
+#define _RETURN_UNEQUAL_FREE(n,c,p,r)     do{if( n != c ) {mfree(p);p = NULL;return r;} }while(0)
+
+#define _RETURN_EQUAL(n,c,r)        do{if( n == c ) return r;}while(0)
+#define _RETURN_EQUAL_0(n,r)        _RETURN_EQUAL(n,0,r)
+#define _RETURN_EQUAL_FREE(n,c,p,r)    do{if( n == c ) {mfree(p);p = NULL;return r;} }while(0)
+#define _RETURN_LT_0(n,r)     do{ if( n < 0) return r;} while(0)
+
+// 两个值的相对差
+#define DIFF_(a,b)                  (( a>b )?( a-b ):( b-a ))
+
+// todo 大端不一样
+#define M_BITSET(v,n)	( v | (0x01<<(n-1)) )
+#define M_BITUNSET(v,n)	( v & (~(0x01<<(n-1)) ))
+#define M_BITGET(v,n)	( ( v>>(n-1) ) & 0x01 )
+
+#define M_MIN(a,b)		((a>b)?b:a)
+#define M_MAX(a,b)		( (a>b)?a:b)
+
+#define A_BIGER(a,b,large)            ((a>b) ? (TRUE):( (DIFF_(a,b) > large)?TRUE:FALSE ))
+#define A_BIGER_U32(a,b)    A_BIGER(a,b,0x7fffffff)
+#define A_BIGER_U16(a,b)    A_BIGER(a,b,0x7fff)
+#define A_BIGER_U8(a,b)    A_BIGER(a,b,0x7f)
+
+// 
+#define PACKET_FREE(p)   do{ if(p){ \
+                                mfree(p->p_data);\
+                                mfree(p);         \
+                        }}while(0)
+// 绝对值的差
+#define ABSOLUTE_DIFF(big,little,max)   ((u32)big > (u32)little)?(big - little):( big + (max - little))
+
+#define ALLOC_COPY(d,s,len)     do{ d = mmalloc(len+1);if(d) mcpy(d,s,len);}while(0)
+
+#define MFREE(p)    do{mfree(p); p = NULL;}while(0)
+// 转换
+#define CHAR_BELONG(c,a,b)  ( a <= c && c <=b)
+#define BYTE_IS_HEX(c)   (('0'<= c && c<='9')|| ('a'<=c && c <= 'f') || ('A'<=c && c <= 'F'))
+#define CHAR_2_INT(n,c)  n = (CHAR_BELONG(c,'0','9')?(c-'0'):( CHAR_BELONG(c, 'a', 'f')?(c-'a'+10):( CHAR_BELONG(c,'A','F')?(c-'A' + 10):n) ) )
+#if 1
+
+#define STR_2_HEX_ARRAY(d,dlen,s, slen) do{  int i,j; \
+											 for( i=0, j=0; j< slen; j++){ u8 h,l; \
+												CHAR_2_INT(h,s[j]);j++; \
+												if(j < slen){CHAR_2_INT(l,s[j]); d[i] = 16 * h + l; i ++;}\
+												else{ d[i] = h;i ++; break;}} \
+													dlen = i; }while(0)
+
+#define STR_2_HEX_ARRAY_INV(d,dlen,s, slen) do{ int i,j; \
+									 for( i=dlen -1, j=slen-1; j>=0;j--){ u8 h,l; \
+										CHAR_2_INT(l,s[j]);j--; \
+										if(j >= 0){CHAR_2_INT(h,s[j]); d[i] = 16 * h + l;}\
+										else{ d[i] = l; break;} \
+										i--;} }while(0)
+
+#define STR_2_INT_ARRAY(d,s,len) do{ int i=0; \
+                                 for(i=0;i<len;i++){ CHAR_2_INT(d[i],s[i]);} }while(0)
+
+#define STR_2_INT_ARRAY_ORDER(d,s,len) 	do{ int i=0; \
+											for(i=0;i<len;i++){ CHAR_2_INT(d[i],s[ (len-i -1) ]);} }while(0)
+
+#endif
+#define HEX_2_CHAR(c,n)	c = (n >= 10)?(n-10+'a'):(n + '0');
+#define HEX_2_STR(d,s,len)	do{	int i,j;for(i=0,j=0;i<len;i++,j++){\
+									d[j] =s[i]/16; HEX_2_CHAR(d[j],d[j]);j++;d[j] = s[i]%16; HEX_2_CHAR(d[j],d[j]);}\
+								}while(0)
+
+#define malloc_cpy(d,dlen,s,slen,ret)	do{ if(d && s && slen > 0){\
+											d = mmalloc(slen);\
+											_RETURN_EQUAL_0(d, ret);\
+											mcpy(d,s,slen);\
+											dlen = slen;\
+											}}while(0)
+								 
+#ifdef __cplusplus
+                                 extern "C"{
+#endif
+// util  tool
+void *mmalloc(size_t size);
+int mmemset(u8 *dst,u8 c,size_t n);
+
+void mfree(void *ptr);
+void mcpy(u8 *d,u8 *s,int len);
+int string2hexarry(u8 *p_dst, const u8 *p_s, int nlen);
+int product_id_head_set(u8 *p_id,char ver, char type, s16 mclass, u32 pid, u8 *p_mac);
+
+int product_id_pid_metch(u8 *p_id,   u32 pid);
+
+void product_id_print(u8 *p_id);
+void byte_printf(u8 *p_had,u8 *p_byte, int len);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
