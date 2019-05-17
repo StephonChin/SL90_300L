@@ -89,6 +89,7 @@ int test_connect_router(void)
 	{
 		delay(100);
 	}
+	local_ip_save();
 	printf("connect success!\n");
   pinMode(TEST_IO,OUTPUT);
   digitalWrite(TEST_IO,LOW);
@@ -165,7 +166,7 @@ static void board_led_flash(void){
 void board_led_status(SYS_status status){
 
 	static u32 old_tm = m2m_current_time_get();
-	// m2m_printf("<%d>\n",status);
+	//m2m_printf("<%d>\n",status);
 	u32 c_time = m2m_current_time_get();
 
 	// todo just for sl99.

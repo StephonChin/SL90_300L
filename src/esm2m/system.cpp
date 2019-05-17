@@ -259,7 +259,7 @@ void sys_wifi_init(void){
 				sprintf(ssid, "%s%02x%02x", SOFTAP_SSID_,mac[4],mac[5]);
 				m2m_log_debug("ssid is : %s", ssid);
 				
-				if(WiFi.softAP(ssid)){
+				if( WiFi.softAP(ssid)){
 					m2m_log_debug("Ready");
 				}else m2m_log_debug("failt");
 
@@ -445,9 +445,9 @@ void sys_sta_smartconf_end(void){
 			if(g_wifi_configing){
 				delay(200);		
 			}
-			if( g_sys_cnn == SYS_CONFIGING_STA && WiFi.smartConfigDone()){
-				g_sys_cnn = SYS_LOST_CONNECT;
-			}
+			// if( g_sys_cnn == SYS_CONFIGING_STA && WiFi.smartConfigDone()){
+			// 	g_sys_cnn = SYS_LOST_CONNECT;
+			// }
 		}
 	}	
 }
@@ -540,14 +540,6 @@ void sys_setup(void){
 	// reset counter.·
 	sys_conf.reset_cnt++;
 	sys_eeprom_write( EEPROM_CONF_ADDRESS, (u8*)&sys_conf,  sizeof(EEPROM_conf_T));
-	{
-	u8 ssid[64] = {0};
-	u8 mac[12] ={0};
-	WiFi.macAddress( mac );
-	sprintf((char*)ssid, "%s%02x%02x%02x", SOFTAP_SSID_, mac[3], mac[4], mac[5]);
-	WiFi.hostname((const char*)ssid);
-
-	}
 	
 }
 

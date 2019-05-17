@@ -2400,7 +2400,7 @@ size_t net_ioctl
         _m2m_net_lock(p->p_net);
         ret = (net_funcTable[cmd])(p_args,flags);
         _m2m_net_unlock( p->p_net);
-        return ret;
+        return (size_t) ret;
     }else{
         m2m_debug_level(M2M_LOG_WARN, "net function Cannot find function %d!",cmd);
         return 0;
@@ -2483,8 +2483,12 @@ Net_T *net_creat( Net_Init_Args_T *p_arg,int flags){
             net_destory(p_net);
             return NULL;
         }else{
-            p_net->host.keep_ping_host_en = 1;
-            _net_host_ping(p_net);
+            u32 ip = 0;
+            mcpy(&ip, p_net->host.addr.ip, sizeof(u32));
+            if( ip ){
+                p_net->host.keep_ping_host_en = 1;
+                _net_host_ping(p_net);
+                }
             }
         // 是否为其它包提供中转功能.
     }

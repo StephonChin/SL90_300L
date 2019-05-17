@@ -22,6 +22,11 @@ void loop()
 	system_loop();
 	if(testbit==0)
 		app_loop();
+	else
+	{
+		delay(100);
+	}
+	
 	// todo 
 	yield();
 }

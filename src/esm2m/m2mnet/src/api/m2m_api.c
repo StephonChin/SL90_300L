@@ -683,7 +683,7 @@ M2M_Return_T m2m_trysync(size_t net){
     Net_T *p_n = (Net_T*)net;
     arg.p_net = p_n;
     if(p_n->ioctl_session)
-            return p_n->ioctl_session( M2M_NET_CMD_TRYSYNC, &arg,0);
+            return (M2M_Return_T) p_n->ioctl_session( M2M_NET_CMD_TRYSYNC, &arg,0);
     else 
         return 0;
 }
