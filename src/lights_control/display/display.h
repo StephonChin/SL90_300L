@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include "../leddrv/ws2812_i2s.h"
 #include "../../include/m2m_log.h"
+#include "../process/data_process.h"
 
 
 //const value define
@@ -27,8 +28,8 @@
 /*
  * string layer define
  */
-#define		STR_LAYER_MAX		15
-#define		STR_LAYER_SEC		20
+#define		STR_LAYER_MAX		20
+#define		STR_LAYER_SEC		15
 
 /*
  * Parameter value
@@ -37,7 +38,7 @@
 #define     PARA_BRIGHT_MAX       	(uint8_t)4
 #define     PARA_SPEED_MAX        	(uint8_t)4
 #define     PARA_OTHER_MAX        	(uint8_t)10
-#define     PARA_COLORNUM_MAX     	(uint8_t)16   /* each mode allow to own MODE_COLOR_MAX color value */
+#define     PARA_COLORNUM_MAX     	(uint8_t)15   /* each mode allow to own MODE_COLOR_MAX color value */
 
 
 #define     POWER_OFF             	(uint8_t)0xf0
@@ -74,30 +75,33 @@
 #define		CARNIVAL				(uint8_t)0x11
 #define		ALTERNATE				(uint8_t)0x12
 
-#define     MODE_MAX              	ALTERNATE
+#define		CURRENT_MODE_MAX		ALTERNATE
+#define     MODE_MAX              	30
 
 #define		RAND()					RndSeed += 199;srand(RndSeed);
 
 
-#define SNOW_LONG               8
-#define SNOW_BOTTOM             6
-#define SNOW_BOTTOM_HOLD        6
-#define SNOW_FREQ               30
+#define 	SNOW_LONG               8
+#define 	SNOW_BOTTOM             6
+#define 	SNOW_BOTTOM_HOLD        6
+#define 	SNOW_FREQ               30
 
 
-#define	LAYOUT_NONE				0
-#define	LAYOUT_2D				1
-#define	LAYOUT_3D				2
+#define		LAYOUT_NONE				0
+#define		LAYOUT_2D				1
+#define		LAYOUT_3D				2
 //type redefine
-typedef struct{
-  uint8 Mode;
-  uint8 ModeBuf;
-  uint8 Init;
-  uint8 LayoutNum;
+typedef struct
+{
+  uint8_t mode;
+  uint8_t mode_buf;
+  uint8_t init;
+  uint8_t reserved;
 }Display_t;
 
 #define PARA_PACK_HEADRE_BYTE	8
-typedef struct{
+typedef struct
+{
 	uint8_t 	Mode;
 	uint8_t   	Speed;
 	uint8_t   	Bright;
@@ -106,14 +110,22 @@ typedef struct{
 	uint8_t   	Chksum;
 	uint8_t   	Reserve1;
 	uint8_t   	ColorNum;
-	struct COLOR_TYPE{
+	struct RCV_COLOR_TYPE
+	{
+		uint8_t		BufR;
+		uint8_t		BufG;
+		uint8_t 	BufB;
+	}RcvColor[PARA_COLORNUM_MAX + 1];
+	struct COLOR_TYPE
+	{
 		uint8_t   BufR;
 		uint8_t   BufG;
 		uint8_t   BufB;
 	}Color[PARA_COLORNUM_MAX + 1];
 }ModePara_t;
 
-typedef struct _LAYER_TYPE{
+typedef struct _LAYER_TYPE
+{
   uint16_t    Head;
   uint16_t    Tail;
 }Layer_t;
@@ -165,6 +177,7 @@ void Display_Tree_Color_Rand(void);
 void Display_Tree_Carnival(void);
 void Display_Tree_Alternate(void);
 
+
 //music functions
 void Music_Mode_Bar(void);
 
@@ -177,8 +190,8 @@ void Display_Layout_Triangle_Right(void);
 
 
 //exported parameters
-extern Display_t    Display;
-extern ModePara_t   ParaData[];
+extern Display_t    display_data;
+extern ModePara_t   mode_para_data[];
 extern Layer_t      Layer[];
 extern Layer_t 		LayerTemp[];
 extern uint8_t      LayerMax;
@@ -216,9 +229,9 @@ extern sint16_t          RndSeed;
 extern uint16_t           HoldTime;
 extern uint8_t           LayerStep;
 extern uint16_t          LedPickAll;
-extern uint8_t           ModeTime[LED_TOTAL];
-extern uint8_t           ModeStep[LED_TOTAL];
-extern uint16_t           LedPick[LED_TOTAL];
+extern uint8_t           ModeTime[];
+extern uint8_t           ModeStep[];
+extern uint16_t           LedPick[];
 extern bool			  	 ModeFirstFlag;
 
 #endif

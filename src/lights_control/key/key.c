@@ -10,7 +10,7 @@
 _TypeKey   KeyMode, KeyColor;
 
 //define
-#define	KEY_POWER_ON_DELAY		10		//100ms	
+#define	KEY_POWER_ON_DELAY		150		//1.5s	
 
 /***********************************
  Key_Scan
@@ -24,32 +24,19 @@ _TypeKey   KeyMode, KeyColor;
 *************************************/
 void Key_Scan(void)
 {
-	static uint16_t   	KeyModeTime = 0;
-	static uint16_t   	KeyColorTime = 0;
-	static uint8_t    	KeyModeFlag = 0;
-	static uint8_t    	KeyColorFlag = 0;
-	static bool			KeyPowerOn = true;
-	static uint8_t 		KeyPowerOnTime = 0;
+	static uint16_t   KeyModeTime = 0;
+	static uint16_t   KeyColorTime = 0;
+	static uint8_t    KeyModeFlag = 0;
+	static uint8_t    KeyColorFlag = 0;
 
-	//do not change the mode when press mode key to reset the wifi mode
-	if (KeyPowerOn)
+	static uint16_t	PowerOnDelay = 0;
+
+	//delay 1.5s(do not change the mode when press mode key to reset the wifi mode)
+	if (PowerOnDelay < KEY_POWER_ON_DELAY)
 	{
-		if (1 == digitalRead(MODE_PIN))
-		{
-			KeyPowerOnTime++;
-			if (KeyPowerOnTime > KEY_POWER_ON_DELAY)
-			{
-				KeyPowerOnTime = 0;
-				KeyPowerOn = false;
-			}
-		}
-		else
-		{
-			KeyPowerOnTime = 0;
-		}
+		PowerOnDelay++;
 		return;
 	}
-
 
 	if(0 == digitalRead(MODE_PIN))
 	{

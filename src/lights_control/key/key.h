@@ -8,6 +8,8 @@
 //define
 #define     MODE_PIN        5  
 #define     COLOR_PIN       4
+#define		PWM_EN_PIN		14
+
 
 //typedef
 typedef enum _KEY_TYPE{

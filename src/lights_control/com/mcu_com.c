@@ -21,6 +21,19 @@ void Uart_Init(void)
 
 
 
+/*
+ * FUNCTION NAME	print_string
+ * BRIEF			debug:print string form uart0
+ */
+void print_string(const uint8_t *src)
+{
+	size_t	len = strlen(src);
+
+	uart_write(uart0, src, len);
+}
+
+
+
 
 
 

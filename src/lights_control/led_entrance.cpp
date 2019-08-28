@@ -86,13 +86,15 @@ void Led_Entrance(void)
 	{
 		time_50ms_pre = time_now;
 		Display_Control();
+
+		write_user_normal_flash();
 	}
 
 	
 	if (TimerUpdateFlag == true)
 	{
 		TimerUpdateFlag = false;
-		Timer_Count_Down();
+		timing_task();
 	}
 
 	#else

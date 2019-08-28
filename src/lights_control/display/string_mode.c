@@ -33,10 +33,10 @@ void Display_Str_Rainbow(void)
 {
 	uint16 i = 0;  
 
-	if(Display.Init == true){	
-		Display.Init = false;
+	if(display_data.init == true){	
+		display_data.init = false;
 
-		Para_Err_Check(&ParaData[RAINBOW]);
+		Para_Err_Check(&mode_para_data[RAINBOW]);
 
 		BrightLevel = 1;
 
@@ -52,7 +52,7 @@ void Display_Str_Rainbow(void)
 		TopG = 240;
 		TopB = 240;
 
-		switch (ParaData[RAINBOW].Other)
+		switch (mode_para_data[RAINBOW].Other)
 		{
 			default:    FadeR = 80;      break;
 			case 3:     FadeR = 60;      break;
@@ -71,7 +71,7 @@ void Display_Str_Rainbow(void)
 
 
 	SpeedCtrl++;
-	if (SpeedCtrl > (PARA_SPEED_MAX - ParaData[RAINBOW].Speed)){
+	if (SpeedCtrl > (PARA_SPEED_MAX - mode_para_data[RAINBOW].Speed)){
 		SpeedCtrl = 0;
 
 		switch (TempStep)
@@ -143,9 +143,9 @@ void Display_Str_Fade(void)
   */
 void Display_Str_Snow(void)
 {
-	Display.Mode = SNAKE;
-	Display.ModeBuf = SNAKE;
-	Display.Init = true;
+	display_data.mode= SNAKE;
+	display_data.mode_buf = SNAKE;
+	display_data.init = true;
 }
 
 
@@ -170,10 +170,10 @@ void Display_Str_Fireworks(void)
 {
 	uint16_t i = 0, j = 0;
 
-	if (Display.Init == true)
+	if (display_data.init == true)
 	{
-		Display.Init = false;
-		Para_Err_Check(&ParaData[FIREWORKS]);
+		display_data.init = false;
+		Para_Err_Check(&mode_para_data[FIREWORKS]);
 		BrightLevel = 1;
 
 		SpeedCtrl = 0;
@@ -194,13 +194,13 @@ void Display_Str_Fireworks(void)
 		case 0:
 		{
 			SpeedCtrl++;
-			if (SpeedCtrl > PARA_SPEED_MAX - ParaData[FIREWORKS].Speed)
+			if (SpeedCtrl > PARA_SPEED_MAX - mode_para_data[FIREWORKS].Speed)
 			{
 				SpeedCtrl = 0;
 
-				FadeR = ParaData[FIREWORKS].Color[TempColor].BufR / FADE_LEVEL;
-				FadeG = ParaData[FIREWORKS].Color[TempColor].BufG / FADE_LEVEL;
-				FadeB = ParaData[FIREWORKS].Color[TempColor].BufB / FADE_LEVEL;
+				FadeR = mode_para_data[FIREWORKS].Color[TempColor].BufR / FADE_LEVEL;
+				FadeG = mode_para_data[FIREWORKS].Color[TempColor].BufG / FADE_LEVEL;
+				FadeB = mode_para_data[FIREWORKS].Color[TempColor].BufB / FADE_LEVEL;
 
 				LayerStep++;	//temporarily used as fading step
 				if (LayerStep >= FADE_LEVEL)		TempStep++;
@@ -235,10 +235,10 @@ void Display_Str_Fireworks(void)
 		{
 		for (i = 0; i < LED_TOTAL; i++)
 		{
-		j = i % ParaData[FIREWORKS].ColorNum;
-		LedData[i].DutyR = ParaData[FIREWORKS].Color[j].BufR;
-		LedData[i].DutyG = ParaData[FIREWORKS].Color[j].BufG;
-		LedData[i].DutyB = ParaData[FIREWORKS].Color[j].BufB;
+		j = i % mode_para_data[FIREWORKS].ColorNum;
+		LedData[i].DutyR = mode_para_data[FIREWORKS].Color[j].BufR;
+		LedData[i].DutyG = mode_para_data[FIREWORKS].Color[j].BufG;
+		LedData[i].DutyB = mode_para_data[FIREWORKS].Color[j].BufB;
 		LedPick[i] = 1;
 		ModeTime[i] = 0;
 		}
@@ -273,10 +273,10 @@ void Display_Str_Fireworks(void)
 		{
 		ModeTime[i] = 0;
 
-		j = i % ParaData[FIREWORKS].ColorNum;
-		TempR = ParaData[FIREWORKS].Color[j].BufR;
-		TempG = ParaData[FIREWORKS].Color[j].BufG;
-		TempB = ParaData[FIREWORKS].Color[j].BufB;
+		j = i % mode_para_data[FIREWORKS].ColorNum;
+		TempR = mode_para_data[FIREWORKS].Color[j].BufR;
+		TempG = mode_para_data[FIREWORKS].Color[j].BufG;
+		TempB = mode_para_data[FIREWORKS].Color[j].BufB;
 		FadeR = TempR / FADE_LEVEL;
 		FadeG = TempG / FADE_LEVEL;
 		FadeB = TempB / FADE_LEVEL;
@@ -299,7 +299,7 @@ void Display_Str_Fireworks(void)
 		default:
 		{
 		TempColor++;
-		if (TempColor >= ParaData[FIREWORKS].ColorNum)    TempColor = 0;
+		if (TempColor >= mode_para_data[FIREWORKS].ColorNum)    TempColor = 0;
 		TempStep = 0;
 		LayerStep = 0;
 		}break;
@@ -313,9 +313,9 @@ void Display_Str_Horizontal(void)
   uint16_t temp1 = 0;
   uint16_t temp2 = 0;
   
-	if(Display.Init == true){	
-    Display.Init = false;
-    Para_Err_Check(&ParaData[HORIZONTAL]);
+	if(display_data.init == true){	
+    display_data.init = false;
+    Para_Err_Check(&mode_para_data[HORIZONTAL]);
     BrightLevel = 1;
     
 	SpeedCtrl = 0;
@@ -324,11 +324,11 @@ void Display_Str_Horizontal(void)
     TempStep  = 0;
     RptCtrl   = 0;
     
-	TempR = ParaData[HORIZONTAL].Color[TempColor].BufR;
-    TempG = ParaData[HORIZONTAL].Color[TempColor].BufG;
-    TempB = ParaData[HORIZONTAL].Color[TempColor].BufB;
+	TempR = mode_para_data[HORIZONTAL].Color[TempColor].BufR;
+    TempG = mode_para_data[HORIZONTAL].Color[TempColor].BufG;
+    TempB = mode_para_data[HORIZONTAL].Color[TempColor].BufB;
 
-    RptTotal = PARA_OTHER_MAX - ParaData[HORIZONTAL].Other + 3; 
+    RptTotal = PARA_OTHER_MAX - mode_para_data[HORIZONTAL].Other + 3; 
     
     Display_All_Set(0,0,0);
     
@@ -337,7 +337,7 @@ void Display_Str_Horizontal(void)
   
   
   SpeedCtrl++;
-  if (SpeedCtrl > (PARA_SPEED_MAX - ParaData[HORIZONTAL].Speed) + 2){
+  if (SpeedCtrl > (PARA_SPEED_MAX - mode_para_data[HORIZONTAL].Speed) + 2){
     SpeedCtrl = 0;
     
     switch (TempStep){
@@ -351,7 +351,7 @@ void Display_Str_Horizontal(void)
       
       //Check the count of color, if the mode has only one color, fill it with dark
       case 1:{
-        if (ParaData[HORIZONTAL].ColorNum == 1)   TempStep = 2;
+        if (mode_para_data[HORIZONTAL].ColorNum == 1)   TempStep = 2;
         else                                      TempStep = 3;
       } break;
       
@@ -365,19 +365,19 @@ void Display_Str_Horizontal(void)
         {
           RptCtrl = 0;
           TempStep = 0;
-          TempR = ParaData[HORIZONTAL].Color[0].BufR;
-          TempG = ParaData[HORIZONTAL].Color[0].BufG;
-          TempB = ParaData[HORIZONTAL].Color[0].BufB;
+          TempR = mode_para_data[HORIZONTAL].Color[0].BufR;
+          TempG = mode_para_data[HORIZONTAL].Color[0].BufG;
+          TempB = mode_para_data[HORIZONTAL].Color[0].BufB;
         }
       } break;
       
       //change color
       case 3:{
         TempColor++;
-        if (TempColor >= ParaData[HORIZONTAL].ColorNum)   TempColor = 0;
-        TempR = ParaData[HORIZONTAL].Color[TempColor].BufR;
-        TempG = ParaData[HORIZONTAL].Color[TempColor].BufG;
-        TempB = ParaData[HORIZONTAL].Color[TempColor].BufB;
+        if (TempColor >= mode_para_data[HORIZONTAL].ColorNum)   TempColor = 0;
+        TempR = mode_para_data[HORIZONTAL].Color[TempColor].BufR;
+        TempG = mode_para_data[HORIZONTAL].Color[TempColor].BufG;
+        TempB = mode_para_data[HORIZONTAL].Color[TempColor].BufB;
         TempStep = 0;
       } break;
     }
@@ -408,10 +408,10 @@ void Display_Str_Waves(void)
 {
 	uint16 i = 0;
 
-	if(Display.Init == true){	
-		Display.Init = false;
+	if(display_data.init == true){	
+		display_data.init = false;
 
-		Para_Err_Check(&ParaData[WAVES]);
+		Para_Err_Check(&mode_para_data[WAVES]);
 
 		BrightLevel = 1;
 
@@ -422,29 +422,29 @@ void Display_Str_Waves(void)
 		RptCtrl 	= 0;
 		TempColor 	= 0;
 
-		TopR = ParaData[WAVES].Color[TempColor].BufR;
-		TopG = ParaData[WAVES].Color[TempColor].BufG;
-		TopB = ParaData[WAVES].Color[TempColor].BufB;
+		TopR = mode_para_data[WAVES].Color[TempColor].BufR;
+		TopG = mode_para_data[WAVES].Color[TempColor].BufG;
+		TopB = mode_para_data[WAVES].Color[TempColor].BufB;
 		TempR = 0;
 		TempG = 0;
 		TempB = 0;
 
 		if (TopR >= TopG && TopR >= TopB){
 			FadeR = 0;
-			FadeG = TopG / (ParaData[WAVES].Other + 1);
-			FadeB = TopB / (ParaData[WAVES].Other + 1);
+			FadeG = TopG / (mode_para_data[WAVES].Other + 1);
+			FadeB = TopB / (mode_para_data[WAVES].Other + 1);
 			TempR = TopR;
 		}
 		else if (TopG >= TopB && TopG >= TopR){
 			FadeG = 0;
-			FadeR = TopR / (ParaData[WAVES].Other + 1);
-			FadeB = TopB / (ParaData[WAVES].Other + 1);
+			FadeR = TopR / (mode_para_data[WAVES].Other + 1);
+			FadeB = TopB / (mode_para_data[WAVES].Other + 1);
 			TempG = TopG;
 		}
 		else if (TopB >= TopR && TopB >= TopG){
 			FadeB = 0;
-			FadeR = TopR / (ParaData[WAVES].Other + 1);
-			FadeG = TopG / (ParaData[WAVES].Other + 1);
+			FadeR = TopR / (mode_para_data[WAVES].Other + 1);
+			FadeG = TopG / (mode_para_data[WAVES].Other + 1);
 			TempB = TopB;
 		}
 		
@@ -456,7 +456,7 @@ void Display_Str_Waves(void)
   
 
 	SpeedCtrl++;
-	if (SpeedCtrl > (PARA_SPEED_MAX - ParaData[WAVES].Speed)){
+	if (SpeedCtrl > (PARA_SPEED_MAX - mode_para_data[WAVES].Speed)){
 		SpeedCtrl = 0;
 
 		switch (TempStep){
@@ -540,7 +540,7 @@ void Display_Str_Waves(void)
 			}break;
 
 			case 7:{
-				for (uint8_t m = 0; m <= (PARA_OTHER_MAX - ParaData[WAVES].Other + 2); m++){
+				for (uint8_t m = 0; m <= (PARA_OTHER_MAX - mode_para_data[WAVES].Other + 2); m++){
 					if (TempR > 0 || TempG > 0 || TempB > 0){
 						TempR -= FadeR;
 						TempG -= FadeG;
@@ -552,30 +552,30 @@ void Display_Str_Waves(void)
 
 			default:{
 				TempColor++;
-				if (TempColor >= ParaData[WAVES].ColorNum)	TempColor = 0;
-				TopR = ParaData[WAVES].Color[TempColor].BufR;
-				TopG = ParaData[WAVES].Color[TempColor].BufG;
-				TopB = ParaData[WAVES].Color[TempColor].BufB;
+				if (TempColor >= mode_para_data[WAVES].ColorNum)	TempColor = 0;
+				TopR = mode_para_data[WAVES].Color[TempColor].BufR;
+				TopG = mode_para_data[WAVES].Color[TempColor].BufG;
+				TopB = mode_para_data[WAVES].Color[TempColor].BufB;
 				TempR = 0;
 				TempG = 0;
 				TempB = 0;
 
 				if (TopR >= TopG && TopR >= TopB){
 					FadeR = 0;
-					FadeG = TopG / (ParaData[WAVES].Other + 1);
-					FadeB = TopB / (ParaData[WAVES].Other + 1);
+					FadeG = TopG / (mode_para_data[WAVES].Other + 1);
+					FadeB = TopB / (mode_para_data[WAVES].Other + 1);
 					TempR = TopR;
 				}
 				else if (TopG >= TopB && TopG >= TopR){
 					FadeG = 0;
-					FadeR = TopR / (ParaData[WAVES].Other + 1);
-					FadeB = TopB / (ParaData[WAVES].Other + 1);
+					FadeR = TopR / (mode_para_data[WAVES].Other + 1);
+					FadeB = TopB / (mode_para_data[WAVES].Other + 1);
 					TempG = TopG;
 				}
 				else if (TopB >= TopR && TopB >= TopG){
 					FadeB = 0;
-					FadeR = TopR / (ParaData[WAVES].Other + 1);
-					FadeG = TopG / (ParaData[WAVES].Other + 1);
+					FadeR = TopR / (mode_para_data[WAVES].Other + 1);
+					FadeG = TopG / (mode_para_data[WAVES].Other + 1);
 					TempB = TopB;
 				}
 				TempStep = 0;
@@ -600,10 +600,10 @@ void Display_Str_Updwn(void)
 {
 	uint16 i = 0, j = 0, k = 0;
 
-	if(Display.Init == true){	
-		Display.Init = false;
+	if(display_data.init == true){	
+		display_data.init = false;
 
-		Para_Err_Check(&ParaData[UPDWN]);
+		Para_Err_Check(&mode_para_data[UPDWN]);
 
 		BrightLevel = 1;
 
@@ -616,12 +616,12 @@ void Display_Str_Updwn(void)
 		TempColor 	= 0;
 		TempColor1 = 1;
 		
-		FadeR = ParaData[UPDWN].Color[TempColor].BufR / FADE_LEVEL;
-		FadeG = ParaData[UPDWN].Color[TempColor].BufG / FADE_LEVEL;
-		FadeB = ParaData[UPDWN].Color[TempColor].BufB / FADE_LEVEL;
-		FadeR1 = ParaData[UPDWN].Color[TempColor1].BufR / FADE_LEVEL;
-		FadeG1 = ParaData[UPDWN].Color[TempColor1].BufG / FADE_LEVEL;
-		FadeB1 = ParaData[UPDWN].Color[TempColor1].BufB / FADE_LEVEL;
+		FadeR = mode_para_data[UPDWN].Color[TempColor].BufR / FADE_LEVEL;
+		FadeG = mode_para_data[UPDWN].Color[TempColor].BufG / FADE_LEVEL;
+		FadeB = mode_para_data[UPDWN].Color[TempColor].BufB / FADE_LEVEL;
+		FadeR1 = mode_para_data[UPDWN].Color[TempColor1].BufR / FADE_LEVEL;
+		FadeG1 = mode_para_data[UPDWN].Color[TempColor1].BufG / FADE_LEVEL;
+		FadeB1 = mode_para_data[UPDWN].Color[TempColor1].BufB / FADE_LEVEL;
 
 		TempR = 0;
 		TempG = 0;
@@ -745,15 +745,15 @@ void Display_Str_Updwn(void)
 			//change the color
 			default:{
 				TempColor++;
-				if (TempColor >= ParaData[UPDWN].ColorNum)	TempColor = 0;
+				if (TempColor >= mode_para_data[UPDWN].ColorNum)	TempColor = 0;
 				TempColor1++;
-				if (TempColor1 >= ParaData[UPDWN].ColorNum) TempColor1 = 0;
-				FadeR = ParaData[UPDWN].Color[TempColor].BufR / FADE_LEVEL;
-				FadeG = ParaData[UPDWN].Color[TempColor].BufG / FADE_LEVEL;
-				FadeB = ParaData[UPDWN].Color[TempColor].BufB / FADE_LEVEL;
-				FadeR1 = ParaData[UPDWN].Color[TempColor1].BufR / FADE_LEVEL;
-				FadeG1 = ParaData[UPDWN].Color[TempColor1].BufG / FADE_LEVEL;
-				FadeB1 = ParaData[UPDWN].Color[TempColor1].BufB / FADE_LEVEL;
+				if (TempColor1 >= mode_para_data[UPDWN].ColorNum) TempColor1 = 0;
+				FadeR = mode_para_data[UPDWN].Color[TempColor].BufR / FADE_LEVEL;
+				FadeG = mode_para_data[UPDWN].Color[TempColor].BufG / FADE_LEVEL;
+				FadeB = mode_para_data[UPDWN].Color[TempColor].BufB / FADE_LEVEL;
+				FadeR1 = mode_para_data[UPDWN].Color[TempColor1].BufR / FADE_LEVEL;
+				FadeG1 = mode_para_data[UPDWN].Color[TempColor1].BufG / FADE_LEVEL;
+				FadeB1 = mode_para_data[UPDWN].Color[TempColor1].BufB / FADE_LEVEL;
 				TempStep = 0;
 				LayerStep = 0;
 			}break;
@@ -764,25 +764,25 @@ void Display_Str_Updwn(void)
 
 void Display_Str_Vintage(void)
 {
-	Display.Mode = COLOR_RAND;
-	Display.ModeBuf = COLOR_RAND;
+	display_data.mode= COLOR_RAND;
+	display_data.mode_buf = COLOR_RAND;
 }
 void Display_Str_Glow(void)
 {
-	Display.Mode = COLOR_RAND;
-	Display.ModeBuf = COLOR_RAND;
+	display_data.mode= COLOR_RAND;
+	display_data.mode_buf = COLOR_RAND;
 }
 void Display_Str_Color_Rand(void)
 {
   uint16_t    i = 0;
   
-  if (Display.Init == true){
-    Display.Init  = false;
-    Para_Err_Check(&ParaData[COLOR_RAND]);
+  if (display_data.init == true){
+    display_data.init  = false;
+    Para_Err_Check(&mode_para_data[COLOR_RAND]);
     BrightLevel = 1;
 
     SpeedCtrl = 0;
-    OtherCtrl = ParaData[COLOR_RAND].Other;
+    OtherCtrl = mode_para_data[COLOR_RAND].Other;
 
     TempR = 0;
     TempG = 0;
@@ -801,7 +801,7 @@ void Display_Str_Color_Rand(void)
   }
     
   SpeedCtrl++;
-  if (SpeedCtrl > (PARA_SPEED_MAX - ParaData[COLOR_RAND].Speed)){
+  if (SpeedCtrl > (PARA_SPEED_MAX - mode_para_data[COLOR_RAND].Speed)){
     SpeedCtrl = 0;
     switch (TempStep){
       case 0:        TempB = 0; TempR += 12; TempG -= 7;	break;

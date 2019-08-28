@@ -35,6 +35,9 @@ int app_cmd_handler(uint8_t *pdata, int rcv_len, M2M_packet_T **pp_ack_data)
 		memcpy(dst, p, rcv_len);
     }
 
+
+     App_data_prcoess();
+
 	
     //check the index to ack  data
     if(app_ack_pack.index){

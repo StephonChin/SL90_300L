@@ -17,9 +17,13 @@
 #include "../key/key.h"
 #include "../../include/m2m_log.h"
 #include "../../include/m2m.h"
-#include "../display/Display.h"
+#include "../display/display.h"
 #include "../com/mcu_com.h"
 #include "countdown.h"
+#include "../flash/user_flash.h"
+#include "../display/music.h"
+#include "../display/layout.h"
+#include "../../include/util.h"
 
 /*
  * PRODUCT_TYPE		super lights(SL90)  -0x01
@@ -41,9 +45,12 @@
 #define     SET_ON_OFF_CMD              (uint8_t)0x10
 #define     SET_MODE_CMD                (uint8_t)0x11
 #define     SET_COLOR_CMD               (uint8_t)0x12
-#define     SET_CNTDWN_HOUR_CMD         (uint8_t)0x13
-#define     SET_CNTDWN_TIME_CMD         (uint8_t)0x14
-#define     SET_PASSWORD_CMD            (uint8_t)0x15
+#define		SET_MODE_COLOR_CMD			(uint8_t)0x13
+
+#define     SET_CNTDWN_HOUR_CMD         (uint8_t)0x34
+#define		SET_REALTIME_CMD			(uint8_t)0x35
+#define     SET_CNTDWN_TIME_CMD         (uint8_t)0x36
+
 
 #define 	LAYOUT_ENTER_CMD			(uint8_t)0x20
 #define		LAYOUT_TEST_CMD				(uint8_t)0x21
@@ -62,7 +69,6 @@
 #define     VOICE_SET_CNTDWN_TIME_CMD   (uint8_t)0x65
 #define     VOICE_MSC_EN_CMD            (uint8_t)0x66
 
-#define     RENAME_DEVICE_CMD           (uint8_t)0x7f
 
 #define		VOICE_ON_NEW				(uint8_t)0x40
 #define		VOICE_OFF_NEW				(uint8_t)0x41
@@ -75,21 +81,23 @@
 /*
  * ack command value(from device to app)
  */
-#define     ALL_STATUS_ACK          (uint8_t)0x81
-#define     MODE_STATUS_ACK         (uint8_t)0x82
-#define     NAME_STATUS_ACK         (uint8_t)0x83
-#define		CNTDWN_STATUS_ACK		(uint8_t)0x94
-#define		PASSWORD_ACK			(uint8_t)0x95
-#define		LAYOUT_ENTER_ACK		(uint8_t)0xa0
-#define		LAYOUT_TEST_ACK			(uint8_t)0xa1
-#define		LAYOUT_SAVE_ACK			(uint8_t)0xa2
+#define     ALL_STATUS_ACK          		(uint8_t)0x81
+#define     MODE_STATUS_ACK         		(uint8_t)0x82
+#define     NAME_STATUS_ACK         		(uint8_t)0x83
+
+#define		CNTDWN_HOUR_STATUS_ACK			(uint8_t)0xb4
+#define		REALTIME_STATUS_ACK				(uint8_t)0xb5
+#define		CNTDWN_TIME_STATUS_ACK			(uint8_t)0xb6
+
+#define		LAYOUT_ENTER_ACK				(uint8_t)0xa0
+#define		LAYOUT_TEST_ACK					(uint8_t)0xa1
+#define		LAYOUT_SAVE_ACK					(uint8_t)0xa2
 #define 	LAYOUT_SEC_CTRL_ACK				(uint8_t)0xa8
 #define 	LAYOUT_MOD_CTRL_ACK				(uint8_t)0xa9
 #define 	LAYOUT_DOT_CTRL_ACK				(uint8_t)0xaa
 #define 	LAYOUT_DOT_NOADD_CTRL_ACK		(uint8_t)0xab
 #define 	LAYOUT_DOT_NOADD_CTRL_2_ACK		(uint8_t)0xac
 
-#define		NAME_MODIFY_ACK			(uint8_t)0xff
 
 /*
  * color value
@@ -128,34 +136,6 @@
 #define		EARTH							(uint8_t)0x1b
 #define		MUTICOLOR						(uint8_t)0x1c
 #define     COLOR_SELF          			(uint8_t)0xff
-
-
-//user data offset
-#define		USER_DATA_EN					0
-#define		USER_SAVE_OFFSET				512 //0~512 is reserved for WIFI configurations
-#define		POWER_FIRST_OFFSET				(0 + USER_SAVE_OFFSET)
-#define		POWER_FIRST_LEN					1
-#define		MODE_OFFSET						(1 + USER_SAVE_OFFSET)
-#define		MODE_LEN						1
-#define		LAYOUT_OFFSET					(2 + USER_SAVE_OFFSET)
-#define		LAYOUT_LEN						1
-#define		CNTDWN_OFFSET					(3 + USER_SAVE_OFFSET)
-#define		CNTDWN_LEN						1			
-#define		PASSWORD_OFFSET					(4 + USER_SAVE_OFFSET)
-#define		PASSWORD_LEN					2
-#define		NAME_CHK_OFFSET					(6 + USER_SAVE_OFFSET)
-#define		NAME_CHK_LEN					1
-#define		LAYER_NUM_OFFSET				(7 + USER_SAVE_OFFSET)
-#define		LAYER_NUM_LEN					1
-#define		TIMER_OFFSET					(8 + USER_SAVE_OFFSET)
-#define		TIMER_LEN						4
-#define		LAYER_OFFSET					(12 + USER_SAVE_OFFSET)
-#define		LAYER_LEN						192
-#define		NAME_OFFSET						(204 + USER_SAVE_OFFSET)
-#define		NAME_LEN						48
-#define		MODE_PARA_OFFSET				(252 + USER_SAVE_OFFSET)
-#define		MODE_PARA_LEN					56
-
 
 
 //typedef
@@ -201,23 +181,6 @@ typedef struct
 }_type_app_pack;
 
 
-#define ALL_STATUS_PACK_BYTE		12
-typedef struct{
-  uint8_t     nam_check;
-  uint16_t    pw_check;
-  uint8_t     layout;
-  uint8_t     cntdwn_hour;
-  uint8_t     on_hour;
-  uint8_t     on_minute;
-  uint8_t     off_hour;
-  uint8_t     off_minute;
-  uint8_t     reserve1;
-  uint8_t     reserve2;
-  uint8_t     reserve3;
-  uint8_t     mode_stt[48];
-}_type_status;
-
-
 
 
 //global functions
@@ -232,15 +195,15 @@ void 		Mcu_com_process(void);
 void 		App_data_prcoess(void);
 void 		res_to_app(uint8_t cmd,const uint8_t *pdata, uint16_t len);
 uint16_t	CRC16_Cal(uint8_t* Buffer, uint16_t len);
-uint8_t   chksum_cal(const uint8_t *src, uint16_t len);
+uint8_t   	chksum_cal(const uint8_t *src, uint16_t len);
 void      	Color_Caculate(uint8_t *rtR, uint8_t *rtG, uint8_t *rtB, uint8_t rIn, uint8_t gIn, uint8_t bIn);
+uint8_t		setting_mode_preset_color(uint8_t mode, uint8_t color);
 uint8_t   	Color_Value_Get(uint8_t ColorNumBuf);
 
 
 //global parameters
-extern _type_app_pack    app_pack,app_ack_pack;
-
-
+extern uint32_t				flash_first_number;
+extern _type_app_pack    	app_pack,app_ack_pack;
 
 #endif
 

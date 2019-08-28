@@ -117,10 +117,9 @@ int app_cmd_handle(u8 cmd,u8*p_data,int recv_len,M2M_packet_T **pp_ack_data){
 			break;
 		case WIFI_CMD_APP_UART_SEND_RQ:
     	case WIFI_CMD_APP_LED_TWINKLE_RQ:
-    
-			printf("===%d===",recv_len);	
-			m2m_bytes_dump((u8*)"-----receive data:", p_data, recv_len);
-			printf("====WARN==== enter app_cmd_handle!!!");
+    	
+			m2m_bytes_dump((u8*)"\n==RCV==: ", p_data, recv_len);
+			printf("\n");
 			ret = app_cmd_handler( p_data, recv_len, pp_ack_data);
 			break;
 		default:

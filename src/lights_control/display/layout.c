@@ -5,6 +5,13 @@
   *
 **************************************************************/
 #include "display.h"
+#include "layout.h"
+
+//gloable paramters
+LayerBrief_T		layer_brief;
+LayerData_T			vertical_layer[50];
+LayerData_T			triangle_layer[50];
+LayerData_T			fan_layer[50];
 
 
 
@@ -16,9 +23,9 @@ void Display_Layout_Enter(void)
 {
 	uint16_t i = 0;
 
-	if (Display.Init == true)
+	if (display_data.init == true)
 	{
-		Display.Init = false;
+		display_data.init = false;
 
 		LayerTest = 0;
 		for (i = 0; i < LED_TOTAL; i++)
@@ -44,12 +51,12 @@ void Display_Layout_Enter(void)
  */
 void Display_Layout_Cancel(void)
 {
-	if (Display.Init == true)
+	if (display_data.init == true)
 	{
-		Display.Init = false;
+		display_data.init = false;
 
-		Display.Mode = Display.ModeBuf;
-		Display.Init = true;
+		display_data.mode= display_data.mode_buf;
+		display_data.init = true;
 	}
 }
 
@@ -63,9 +70,9 @@ void Display_Layout_Test(void)
 	uint16_t i = 0;
 	uint16_t j = 0;
 	
-	if (Display.Init == true)
+	if (display_data.init == true)
 	{
-		Display.Init = false;
+		display_data.init = false;
 
 		//
 		if (LayerTemp[LayerTest].Head > LayerTemp[LayerTest].Tail)
@@ -128,9 +135,9 @@ void Display_Layout_Save(void)
 {
 	uint16_t i = 0;
 	
-	if (Display.Init == true)
+	if (display_data.init == true)
 	{
-		Display.Init = false;
+		display_data.init = false;
 
 		for (i = 0; i < LayerTest; i++)
 		{
@@ -139,10 +146,9 @@ void Display_Layout_Save(void)
 		}
 
 		LayerMax = LayerTest;
-		Display.LayoutNum = LAYOUT_2D;
 		
-		Display.Mode = GREEN_FLASH;
-		Display.Init = true;
+		display_data.mode= GREEN_FLASH;
+		display_data.init = true;
 	}
 }
 

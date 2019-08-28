@@ -22,6 +22,7 @@ extern "C" {
   #include "./key/key.h"
   #include "./com/mcu_com.h"
   #include "./process/countdown.h"
+  #include "./flash/user_flash.h"
 }
 
 

@@ -40,7 +40,6 @@
  * NC = Not Connected to Module Pads --> No Access
  *
  */
-#if 0
 #include "Arduino.h"
 #include <pgmspace.h>
 #include "uart.h"
@@ -770,7 +769,4 @@ uart_detect_baudrate(int uart_nr)
 
     return default_rates[i];
 }
-<<<<<<< HEAD
-#endif
-=======
 #endif

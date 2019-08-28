@@ -5,6 +5,10 @@
 	* BRIEF			Music display function
 ***********************************************************/
 #include "display.h"
+#include "music.h"
+
+//gloable paramters
+MusicData_T	music_data;
 
 uint8_t	Music_Color_Table[LAYER_MAX][3]=
 {
@@ -51,9 +55,9 @@ void Music_Mode_Bar(void)
 {
 	uint16_t	i = 0;
 	
-	if (Display.Init)
+	if (display_data.init)
 	{
-		Display.Init = false;
+		display_data.init = false;
 
 		#if 0
 		FadeLevel = (uint8_t)(1200 / (uint16_t)LayerMax); //1200 = 240 * 5 (from 240,0,0 -> 240,0,240)
@@ -119,8 +123,8 @@ void Music_Mode_Bar(void)
 	if (MusicExitTime >= 100)
 	{
 		MusicExitTime = 0;
-		Display.Mode = Display.ModeBuf;
-		Display.Init = true;
+		display_data.mode= display_data.mode_buf;
+		display_data.init = true;
 	}
 }
 

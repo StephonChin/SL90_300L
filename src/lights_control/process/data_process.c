@@ -7,11 +7,10 @@
 
 #define	DATA_PROCESS_DEBUG		0
 
-//extern global parameters
-extern cntdwn_T	cntdwn_data;
-
 
 //global parameters
+/* This value will be set to 0xaa5555aa if it's not the first time to write flash*/
+uint32_t			flash_first_number;		
 uint8_t           	ColorData[20][3];
 _type_app_pack    	app_pack, app_ack_pack;
 _type_voice_cmd		voice_cmd;
@@ -19,16 +18,25 @@ _type_voice_cmd		voice_cmd;
 
 
 // File Parameters
-_type_status    	AllStatus;
 uint8_t				name_chksum;
 _type_mcu_uart  	mcu_rcv_pack;
 bool				mode_change_flag;
 uint16_t			mode_change_time;
 
 
-extern int sys_eeprom_read(int address, u8 *p_buf, int len);
-extern int sys_eeprom_write(int address, u8 *p_buf, int len);
+uint8_t	  index_rcv_pre;
+uint8_t	  index_rcv_time;
 
+
+
+/**
+  * enable_user_normal_flash_write
+  */
+static __inline__ void enable_user_normal_flash_write(void)
+{
+	user_normal_flash_write_clear_flag 	= true;
+	user_normal_flash_write_flag 		= true;
+}
 
 
 
@@ -76,7 +84,7 @@ const uint8_t  GAMMA_TABLE[] =
 	115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
 	144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
 	177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
-	215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 
+	215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,254 
 };
 
 #endif
@@ -94,326 +102,383 @@ const uint8_t  GAMMA_TABLE[] =
 **/
 void User_Data_Init(void)
 {
-	uint8_t 	temp = 0;
 	bool 		user_rst = true;	
-
-	Display_Layout_None_Init();
 
 	//initialize key port 
 	pinMode(MODE_PIN, INPUT);
 	pinMode(COLOR_PIN, INPUT);
+	pinMode(PWM_EN_PIN, OUTPUT);
+	digitalWrite(PWM_EN_PIN, 1);
 
-	//initialize user data flash 
-	#if USER_DATA_EN==1
+	/* Checksum the all paramters value
+	 * Reset or restore all paramters
+	 */
+
+	//Get the parameters' data from user normal flash 
+	read_user_normal_flash();
 	
-	sys_eeprom_read(POWER_FIRST_OFFSET, (uint8_t *)&power, POWER_FIRST_LEN);
-	#if DATA_PROCESS_DEBUG==1
-	m2m_bytes_dump((u8 *)"[INFO] power =", &power, 1);
-	#endif
-	
-	if (power != 0xaa)
+	//Yes - Confirm if it is the first time to write the user normal flash? 
+	if (flash_first_number != 0xaaaa5555)
 	{
-		user_rst = true;
-	}
-#if 0
-	//it's not the first time to power on
-	else	
-	{
-		#if DATA_PROCESS_DEBUG==1
-		m2m_bytes_dump((u8 *)"[INFO] power = 0xaa", 0, 0);
-		#endif
+		flash_first_number = 0xaaaa5555;
 		
-		//restore the mode before power off from flash 
-		sys_eeprom_read(MODE_OFFSET, (uint8_t *)&Display.ModeBuf, MODE_LEN);
-		if (Display.ModeBuf > MODE_MAX)
+		display_data.mode_buf 	= STEADY;
+		display_data.mode 		= display_data.mode_buf;
+		display_data.init 		= true;
+
+		timing_data.cntdwn_hour = 0;
+		timing_data.en_flag = 0;
+		for (uint8_t i = 0; i < TIMING_GRP_MAX; i++)
 		{
-			#if DATA_PROCESS_DEBUG==1
-			m2m_bytes_dump((u8 *)"==INFO== mode > MODE_MAX!", 0, 0);
-			#endif
-			Display.ModeBuf = STEADY;
-			sys_eeprom_write(MODE_OFFSET, (uint8_t *)&Display.ModeBuf, MODE_LEN);
+			timing_data.timing_grp[i].on_hour 		= 0;
+			timing_data.timing_grp[i].on_minute 	= 0;
+			timing_data.timing_grp[i].off_hour 		= 0;
+			timing_data.timing_grp[i].off_minute 	= 0;
 		}
-		Display.Mode = Display.ModeBuf;
 
-		//restore the layout number
-		sys_eeprom_read(LAYOUT_OFFSET, (uint8_t *)Display.LayoutNum, LAYOUT_LEN);
+		music_data.enable_flag 	= false;
+		music_data.mode 		= 0;
 
-		if (Display.LayoutNum == LAYOUT_2D || Display.LayoutNum == LAYOUT_3D)
+		layer_brief.vertical_flag 	= 0;
+		layer_brief.vertical_total 	= 0;
+		layer_brief.triangle_flag 	= 0;
+		layer_brief.triangle_total 	= 0;
+		layer_brief.fan_flag		= 0;
+		layer_brief.fan_total 		= 0;
+		Display_Layout_None_Init();
+
+
+		for (uint8_t i = 0; i < MODE_MAX; i++)
+	  	{
+			mode_para_data[i].Mode 		= i;
+			mode_para_data[i].Speed 	= 3;
+			mode_para_data[i].Bright 	= 4;
+			mode_para_data[i].Other 	= 0;
+			mode_para_data[i].ColorNum 	= 0;
+			mode_para_data[i].ColorVal 	= COLOR_SELF;
+			mode_para_data[i].Chksum 	= 0;
+			mode_para_data[i].Reserve1 	= 0;
+			for (uint8_t j = 0; j <= PARA_COLORNUM_MAX; j++)
+	    	{
+	    		mode_para_data[i].RcvColor[j].BufR = 0;
+				mode_para_data[i].RcvColor[j].BufG = 0;
+				mode_para_data[i].RcvColor[j].BufB = 0;
+				mode_para_data[i].Color[j].BufR = 0;
+				mode_para_data[i].Color[j].BufG = 0;
+				mode_para_data[i].Color[j].BufB = 0;
+			}
+		}
+
+		uint8_t i = 0;
+		
+		i = STEADY;
+		mode_para_data[i].ColorVal = MUTICOLOR;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = SPARKLE;
+		mode_para_data[i].Other = 10;
+		mode_para_data[i].ColorVal = WINTER;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = RAINBOW;
+		mode_para_data[i].Other = 4;
+
+		i = FADE;
+		mode_para_data[i].ColorVal = CHRISTMAS;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = SNOW;
+		mode_para_data[i].Speed = 4;
+		mode_para_data[i].ColorVal = WHITE;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = SNAKE;
+		mode_para_data[i].Other  = 4;
+		mode_para_data[i].ColorVal = INDEPENDENCE;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = TWINKLE;
+		mode_para_data[i].Other  = 5;
+		mode_para_data[i].ColorVal = ORANGE;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = FIREWORKS;
+		mode_para_data[i].ColorVal = MUTICOLOR;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = HORIZONTAL;
+		mode_para_data[i].Other  = 10;
+		mode_para_data[i].ColorVal = HALLOWEEN;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = WAVES;
+		mode_para_data[i].Other  = 5;
+		mode_para_data[i].ColorVal = THANKSGIVING;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = UPDWN;
+		mode_para_data[i].Other  = 5;
+		mode_para_data[i].ColorVal = MUTICOLOR;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = GLOW;
+		mode_para_data[i].ColorVal = SPRING;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = COLOR_RAND;
+		mode_para_data[i].Other  = 10;
+	}
+		
+
+	//No - Confirm if it is the first time to write the user normal flash? 
+	else
+	{
+		if (display_data.mode_buf > CURRENT_MODE_MAX)
 		{
-			#if DATA_PROCESS_DEBUG==1
-			m2m_bytes_dump((u8 *)"==INFO==LayoutNum = 2D/3D!", 0, 0);
-			#endif
-			//restore the layer information
-			sys_eeprom_read(LAYER_NUM_OFFSET, (uint8_t *)&LayerMax, LAYER_NUM_LEN);
-			uint8_t len = LayerMax * 4;
-			sys_eeprom_read(LAYER_OFFSET, (uint8_t *)&Layer, len);
+			display_data.mode_buf = STEADY;
+			enable_user_normal_flash_write();
+		}
+		display_data.mode = display_data.mode_buf;
+		display_data.init = true;
+
+		if (timing_data.cntdwn_hour > CNTDWN_HOUR_MAX)
+		{
+			timing_data.cntdwn_hour = 0;
+			enable_user_normal_flash_write();
+		}
+
+		for (uint8_t i = 0; i < TIMING_GRP_MAX; i++)
+		{
+			if (timing_data.timing_grp[i].on_hour >= 24 || timing_data.timing_grp[i].on_minute >= 60 || 
+			timing_data.timing_grp[i].off_hour >= 24 || timing_data.timing_grp[i].off_minute >= 60)
+			{
+				timing_data.timing_grp[i].on_hour = 0;
+				timing_data.timing_grp[i].on_minute = 0;
+				timing_data.timing_grp[i].off_hour = 0;
+				timing_data.timing_grp[i].off_minute = 0;
+				setting_timing_flag((TimingEnFlag_E)i, 0);
+				enable_user_normal_flash_write();
+			}
+		}
+
+		
+
+		//music data
+		if (music_data.enable_flag > 1)		music_data.enable_flag = 0;
+		if (music_data.mode > 1)			music_data.mode = 0;
+
+		//vertical layer information
+		if (layer_brief.vertical_flag == 0 || layer_brief.vertical_total == 0 || layer_brief.vertical_total > LAYER_MAX)
+		{
+			Display_Layout_None_Init();
 		}
 		else
 		{
-			if (Display.LayoutNum > LAYOUT_3D)
+			uint8_t err_flag = false;
+			for (uint8_t i = 0; i < LAYER_MAX; i++)
 			{
-				#if DATA_PROCESS_DEBUG==1
-				m2m_bytes_dump((u8 *)"==INFO== LayoutNum > 3D!", 0, 0);
-				#endif
-				Display.LayoutNum = LAYOUT_NONE;
-				sys_eeprom_write(LAYOUT_OFFSET, (uint8_t *)Display.LayoutNum, LAYOUT_LEN);
+				if (vertical_layer[i].tail >= LED_TOTAL || vertical_layer[i].head >= LED_TOTAL)
+				{
+					err_flag = true;
+					break;
+				}
 			}
-			Display_Layout_None_Init();
+
+			//if the layer information is wrong.
+			if (err_flag)
+			{
+				layer_brief.vertical_flag = 0;
+				Display_Layout_None_Init();
+				enable_user_normal_flash_write();
+			}
 		}
 
-		//restore the count down time
-		sys_eeprom_read(TIMER_OFFSET, (uint8_t *)&cntdwn_data.on_hour, TIMER_LEN);
-		if (cntdwn_data.on_hour >= 24 || cntdwn_data.on_min >= 60 || cntdwn_data.off_hour >= 24 || cntdwn_data.off_min >= 60)
+		//triangle layer information
+		if (layer_brief.triangle_flag == 0 || layer_brief.triangle_total == 0 || layer_brief.triangle_total > LAYER_MAX)
 		{
-			cntdwn_data.on_hour = 0xff;
-			cntdwn_data.on_min = 0xff;
-			cntdwn_data.off_min = 0xff;
-			cntdwn_data.off_hour = 0xff;
+			
 		}
+		else
+		{
+			uint8_t err_flag = false;
+			for (uint8_t i = 0; i < LAYER_MAX; i++)
+			{
+				if (triangle_layer[i].tail >= LED_TOTAL || triangle_layer[i].head >= LED_TOTAL)
+				{
+					err_flag = true;
+					break;
+				}
+			}
 
-		//restore the name check value
-		sys_eeprom_read(NAME_CHK_OFFSET, (uint8_t *)&AllStatus.nam_check, NAME_CHK_LEN);
-	}
-#endif
-
-	#endif
-
-
-	//when need to reset all user data
-	if (user_rst)
-	{
-		#if USER_DATA_EN==1
-		power = 0xaa;
-		sys_eeprom_write(POWER_FIRST_OFFSET, (uint8_t *)&power, POWER_FIRST_LEN);
-
-		#endif
-
-		Display.LayoutNum 		= LAYOUT_2D;
-		#if USER_DATA_EN==1
-		sys_eeprom_write(LAYOUT_OFFSET, (uint8_t *)&Display.LayoutNum, LAYOUT_LEN);
-		#endif
-
-		Display.ModeBuf 		= STEADY;
-		Display.Mode 			= STEADY;
-		Display.Init			= true;
-		#if USER_DATA_EN==1
-		//sys_eeprom_write(MODE_OFFSET, (uint8_t *)&Display.ModeBuf, MODE_LEN);
-		#endif
-
-		cntdwn_data.cntdwn_hour = 0;
-		#if USER_DATA_EN==1
-		//sys_eeprom_write(CNTDWN_OFFSET, (uint8_t *)&cntdwn_data.cntdwn_hour, CNTDWN_LEN);
-		#endif
-
-		#if USER_DATA_EN==1
-		//sys_eeprom_write(PASSWORD_OFFSET, (uint8_t *)&pw_chksum, PASSWORD_LEN);
-		#endif
-
-		name_chksum = 0;
-		#if USER_DATA_EN==1
-		//sys_eeprom_write(NAME_CHK_OFFSET, (uint8_t *)&name_chksum, NAME_CHK_LEN);
-		#endif
-		
-		Display_Layout_None_Init();
-		#if USER_DATA_EN==1
-		//sys_eeprom_write(LAYER_NUM_OFFSET, (uint8_t *)&LayerMax, LAYER_NUM_LEN);
-		//sys_eeprom_write(LAYER_OFFSET, (uint8_t *)&Layer, LAYER_NUM_LEN);
-		#endif
-		
-		for (temp = 0; temp <= MODE_MAX; temp++)
-	  	{
-			ParaData[temp].Mode = temp;
-			ParaData[temp].Speed = 3;
-			ParaData[temp].Bright = 4;
-			ParaData[temp].Other = 0;
-			ParaData[temp].ColorNum = 0;
-			ParaData[temp].ColorVal = COLOR_SELF;
-			ParaData[temp].Chksum = 0;
-			ParaData[temp].Reserve1 = 0;
-			for (uint8_t i = 0; i <= PARA_COLORNUM_MAX; i++)
-	    	{
-				ParaData[temp].Color[i].BufR = 0;
-				ParaData[temp].Color[i].BufG = 0;
-				ParaData[temp].Color[i].BufB = 0;
+			//if the layer information is wrong.
+			if (err_flag)
+			{
+				layer_brief.triangle_flag = 0;
+				enable_user_normal_flash_write();
 			}
 		}
 
-		temp = STEADY;
-		ParaData[temp].ColorNum = 1;
-		ParaData[temp].ColorVal = 0;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[RED][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[RED][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[RED][B];
+		//fan layer information
+		if (layer_brief.fan_flag == 0 || layer_brief.fan_total == 0 || layer_brief.fan_total > LAYER_MAX)
+		{
+			
+		}
+		else
+		{
+			uint8_t err_flag = false;
+			for (uint8_t i = 0; i < LAYER_MAX; i++)
+			{
+				if (fan_layer[i].tail >= LED_TOTAL || fan_layer[i].head >= LED_TOTAL)
+				{
+					err_flag = true;
+					break;
+				}
+			}
+
+			//if the layer information is wrong.
+			if (err_flag)
+			{
+				layer_brief.fan_flag = 0;
+				enable_user_normal_flash_write();
+			}
+		}
+
+		//mode status and mode data
+		uint8_t i = 0;
+		for (i = 0; i < CURRENT_MODE_MAX; i++)
+	  	{
+	  		uint8_t err_flag = false;
+
+			if (mode_para_data[i].Mode != i || mode_para_data[i].Speed > PARA_SPEED_MAX || mode_para_data[i].Bright > PARA_BRIGHT_MAX
+			|| mode_para_data[i].Other > PARA_OTHER_MAX || mode_para_data[i].ColorNum > PARA_COLORNUM_MAX) 
+	  		{
+				err_flag = true;
+				enable_user_normal_flash_write();
+	  		}
+	  		
+	  		if (err_flag)
+	  		{
+				mode_para_data[i].Mode 		= i;
+				mode_para_data[i].Speed 	= 3;
+				mode_para_data[i].Bright 	= 4;
+				mode_para_data[i].Other 	= 0;
+				mode_para_data[i].ColorNum 	= 0;
+				mode_para_data[i].ColorVal 	= COLOR_SELF;
+				mode_para_data[i].Chksum 	= 0;
+				mode_para_data[i].Reserve1 	= 0;
+				for (uint8_t j = 0; j <= PARA_COLORNUM_MAX; j++)
+		    	{
+					mode_para_data[i].Color[j].BufR = 0;
+					mode_para_data[i].Color[j].BufG = 0;
+					mode_para_data[i].Color[j].BufB = 0;
+				}
+
+				if (i == STEADY)
+				{
+					mode_para_data[i].ColorVal = MUTICOLOR;
+					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+				}
 
 
-		temp = SPARKLE;
-		ParaData[temp].Other = 10;
-		ParaData[temp].ColorNum = 3;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[BLUE][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[BLUE][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[BLUE][B];
-		ParaData[temp].Color[1].BufR = COLOR_VECTOR[COLD_WHITE][R];
-		ParaData[temp].Color[1].BufG = COLOR_VECTOR[COLD_WHITE][G];
-		ParaData[temp].Color[1].BufB = COLOR_VECTOR[COLD_WHITE][B];
-		ParaData[temp].Color[2].BufR = COLOR_VECTOR[SKY_BLUE][R];
-		ParaData[temp].Color[2].BufG = COLOR_VECTOR[SKY_BLUE][G];
-		ParaData[temp].Color[2].BufB = COLOR_VECTOR[SKY_BLUE][B];
+				if (i == SPARKLE)
+				{
+					mode_para_data[i].Other = 10;
+					mode_para_data[i].ColorVal = WINTER;
+					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+				}
 
-		temp = RAINBOW;
-		ParaData[temp].Other = 4;
+				if (i == RAINBOW)
+				{
+					mode_para_data[i].Other = 4;
+				}
 
-		temp = FADE;
-		ParaData[temp].Bright = 4;
-		ParaData[temp].ColorNum = 3;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[RED][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[RED][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[RED][B];
-		ParaData[temp].Color[1].BufR = COLOR_VECTOR[GREEN][R];
-		ParaData[temp].Color[1].BufG = COLOR_VECTOR[GREEN][G];
-		ParaData[temp].Color[1].BufB = COLOR_VECTOR[GREEN][B];
-		ParaData[temp].Color[2].BufR = COLOR_VECTOR[BLUE][R];
-		ParaData[temp].Color[2].BufG = COLOR_VECTOR[BLUE][G];
-		ParaData[temp].Color[2].BufB = COLOR_VECTOR[BLUE][B];
+				if (i == FADE)
+				{
+					mode_para_data[i].ColorVal = CHRISTMAS;
+					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+				}
 
-		temp = SNOW;
-		ParaData[temp].Speed = 4;
-		ParaData[temp].ColorNum = 1;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[WHITE][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[WHITE][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[WHITE][B];
+				if (i == SNOW)
+				{
+					mode_para_data[i].Speed = 4;
+					mode_para_data[i].ColorVal = WHITE;
+					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+				}
 
-		temp = SNAKE;
-		ParaData[temp].Other  = 4;
-		ParaData[temp].ColorNum = 3;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[RED][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[RED][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[RED][B];
-		ParaData[temp].Color[1].BufR = COLOR_VECTOR[BLUE][R];
-		ParaData[temp].Color[1].BufG = COLOR_VECTOR[BLUE][G];
-		ParaData[temp].Color[1].BufB = COLOR_VECTOR[BLUE][B];
-		ParaData[temp].Color[2].BufR = COLOR_VECTOR[WHITE][R];
-		ParaData[temp].Color[2].BufG = COLOR_VECTOR[WHITE][G];
-		ParaData[temp].Color[2].BufB = COLOR_VECTOR[WHITE][B];
+				if (i == SNAKE)
+				{
+					mode_para_data[i].Other  = 4;
+					mode_para_data[i].ColorVal = INDEPENDENCE;
+					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+				}
 
-		temp = TWINKLE;
-		ParaData[temp].Other  = 5;
-		ParaData[temp].ColorNum = 1;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[ORANGE][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[ORANGE][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[ORANGE][B];
+				if (i == TWINKLE)
+				{
+					mode_para_data[i].Other  = 5;
+					mode_para_data[i].ColorVal = ORANGE;
+					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+				}
+
+				if (i == FIREWORKS)
+				{
+					mode_para_data[i].ColorVal = MUTICOLOR;
+					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+				}
 
 
-		temp = FIREWORKS;
-		ParaData[temp].ColorNum = 8;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[RED][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[RED][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[RED][B];
-		ParaData[temp].Color[1].BufR = COLOR_VECTOR[GREEN][R];
-		ParaData[temp].Color[1].BufG = COLOR_VECTOR[GREEN][G];
-		ParaData[temp].Color[1].BufB = COLOR_VECTOR[GREEN][B];
-		ParaData[temp].Color[2].BufR = COLOR_VECTOR[BLUE][R];
-		ParaData[temp].Color[2].BufG = COLOR_VECTOR[BLUE][G];
-		ParaData[temp].Color[2].BufB = COLOR_VECTOR[BLUE][B];
-		ParaData[temp].Color[3].BufR = COLOR_VECTOR[ORANGE][R];
-		ParaData[temp].Color[3].BufG = COLOR_VECTOR[ORANGE][G];
-		ParaData[temp].Color[3].BufB = COLOR_VECTOR[ORANGE][B];
-		ParaData[temp].Color[4].BufR = COLOR_VECTOR[SPRING_GREEN][R];
-		ParaData[temp].Color[4].BufG = COLOR_VECTOR[SPRING_GREEN][G];
-		ParaData[temp].Color[4].BufB = COLOR_VECTOR[SPRING_GREEN][B];
-		ParaData[temp].Color[5].BufR = COLOR_VECTOR[PEACH][R];
-		ParaData[temp].Color[5].BufG = COLOR_VECTOR[PEACH][G];
-		ParaData[temp].Color[5].BufB = COLOR_VECTOR[PEACH][B];
-		ParaData[temp].Color[6].BufR = COLOR_VECTOR[LAWN_GREEN][R];
-		ParaData[temp].Color[6].BufG = COLOR_VECTOR[LAWN_GREEN][G];
-		ParaData[temp].Color[6].BufB = COLOR_VECTOR[LAWN_GREEN][B];
-		ParaData[temp].Color[7].BufR = COLOR_VECTOR[PURPLE][R];
-		ParaData[temp].Color[7].BufG = COLOR_VECTOR[PURPLE][G];
-		ParaData[temp].Color[7].BufB = COLOR_VECTOR[PURPLE][B];
+				if (i == HORIZONTAL)
+				{
+					mode_para_data[i].Other  = 10;
+					mode_para_data[i].ColorVal = HALLOWEEN;
+					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+				}
 
-		temp = VERTIGO;
-		ParaData[temp].Other  = 8;
-		ParaData[temp].ColorNum = 2;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[RED][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[RED][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[RED][B];
-		ParaData[temp].Color[1].BufR = COLOR_VECTOR[WHITE][R];
-		ParaData[temp].Color[1].BufG = COLOR_VECTOR[WHITE][G];
-		ParaData[temp].Color[1].BufB = COLOR_VECTOR[WHITE][B];
+				if (i == WAVES)
+				{
+					mode_para_data[i].Other  = 5;
+					mode_para_data[i].ColorVal = THANKSGIVING;
+					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+				}
 
+				if (i == UPDWN)
+				{
+					mode_para_data[i].Other  = 5;
+					mode_para_data[i].ColorVal = MUTICOLOR;
+					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+				}
 
-		temp = HORIZONTAL;
-		ParaData[temp].Other  = 10;
-		ParaData[temp].ColorNum = 6;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[RED][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[RED][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[RED][B];
-		ParaData[temp].Color[1].BufR = COLOR_VECTOR[GREEN][R];
-		ParaData[temp].Color[1].BufG = COLOR_VECTOR[GREEN][G];
-		ParaData[temp].Color[1].BufB = COLOR_VECTOR[GREEN][B];
-		ParaData[temp].Color[2].BufR = COLOR_VECTOR[BLUE][R];
-		ParaData[temp].Color[2].BufG = COLOR_VECTOR[BLUE][G];
-		ParaData[temp].Color[2].BufB = COLOR_VECTOR[BLUE][B];
-		ParaData[temp].Color[3].BufR = COLOR_VECTOR[YELLOW][R];
-		ParaData[temp].Color[3].BufG = COLOR_VECTOR[YELLOW][G];
-		ParaData[temp].Color[3].BufB = COLOR_VECTOR[YELLOW][B];
-		ParaData[temp].Color[4].BufR = COLOR_VECTOR[PEACH][R];
-		ParaData[temp].Color[4].BufG = COLOR_VECTOR[PEACH][G];
-		ParaData[temp].Color[4].BufB = COLOR_VECTOR[PEACH][B];
-		ParaData[temp].Color[5].BufR = COLOR_VECTOR[WHITE][R];
-		ParaData[temp].Color[5].BufG = COLOR_VECTOR[WHITE][G];
-		ParaData[temp].Color[5].BufB = COLOR_VECTOR[WHITE][B];
+				if (i == GLOW)
+				{
+					mode_para_data[i].ColorVal = SPRING;
+					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+				}
 
-		temp = WAVES;
-		ParaData[temp].Other  = 5;
-		ParaData[temp].ColorNum = 5;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[RED][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[RED][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[RED][B];
-		ParaData[temp].Color[1].BufR = COLOR_VECTOR[GREEN][R];
-		ParaData[temp].Color[1].BufG = COLOR_VECTOR[GREEN][G];
-		ParaData[temp].Color[1].BufB = COLOR_VECTOR[GREEN][B];
-		ParaData[temp].Color[2].BufR = COLOR_VECTOR[BLUE][R];
-		ParaData[temp].Color[2].BufG = COLOR_VECTOR[BLUE][G];
-		ParaData[temp].Color[2].BufB = COLOR_VECTOR[BLUE][B];
-		ParaData[temp].Color[3].BufR = COLOR_VECTOR[YELLOW][R];
-		ParaData[temp].Color[3].BufG = COLOR_VECTOR[YELLOW][G];
-		ParaData[temp].Color[3].BufB = COLOR_VECTOR[YELLOW][B];
-		ParaData[temp].Color[4].BufR = COLOR_VECTOR[PEACH][R];
-		ParaData[temp].Color[4].BufG = COLOR_VECTOR[PEACH][G];
-		ParaData[temp].Color[4].BufB = COLOR_VECTOR[PEACH][B];
-
-		temp = UPDWN;
-		ParaData[temp].Other  = 5;
-		ParaData[temp].ColorNum = 2;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[RED][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[RED][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[RED][B];
-		ParaData[temp].Color[1].BufR = COLOR_VECTOR[BLUE][R];
-		ParaData[temp].Color[1].BufG = COLOR_VECTOR[BLUE][G];
-		ParaData[temp].Color[1].BufB = COLOR_VECTOR[BLUE][B];
-
-		temp = GLOW;
-		ParaData[temp].ColorNum = 3;
-		ParaData[temp].Color[0].BufR = COLOR_VECTOR[RED][R];
-		ParaData[temp].Color[0].BufG = COLOR_VECTOR[RED][G];
-		ParaData[temp].Color[0].BufB = COLOR_VECTOR[RED][B];
-		ParaData[temp].Color[1].BufR = COLOR_VECTOR[GREEN][R];
-		ParaData[temp].Color[1].BufG = COLOR_VECTOR[GREEN][G];
-		ParaData[temp].Color[1].BufB = COLOR_VECTOR[GREEN][B];
-		ParaData[temp].Color[2].BufR = COLOR_VECTOR[WHITE][R];
-		ParaData[temp].Color[2].BufG = COLOR_VECTOR[WHITE][G];
-		ParaData[temp].Color[2].BufB = COLOR_VECTOR[WHITE][B];
-
-		temp = COLOR_RAND;
-		ParaData[temp].Other  = 10;
+				if (i == COLOR_RAND)
+				{
+					mode_para_data[i].Other  = 10;
+				}
+			}
+		}
 	}
-
 
 	//get check sum
-	for (temp = 0; temp <= MODE_MAX; temp++)
+	for (uint8_t i = 0; i < MODE_MAX; i++)
 	{
-		ParaData[temp].Chksum = chksum_cal((const uint8_t *)&ParaData[temp], 8 + PARA_COLORNUM_MAX * 3);
+		mode_para_data[i].Chksum = 0;
+		mode_para_data[i].Chksum = chksum_cal((const uint8_t *)&mode_para_data[i], 8 + mode_para_data[i].ColorNum * 3);
+
+		if (mode_para_data[i].ColorVal == 0xff)
+		{
+			for (uint8_t j = 0; j < mode_para_data[i].ColorNum; j++)
+			{
+				mode_para_data[i].Color[j].BufR = mode_para_data[i].RcvColor[j].BufR;
+				mode_para_data[i].Color[j].BufG = mode_para_data[i].RcvColor[j].BufG;
+				mode_para_data[i].Color[j].BufB = mode_para_data[i].RcvColor[j].BufB;
+			}
+		}
 	}
+
+	
 }
 
 
@@ -427,13 +492,22 @@ void User_Data_Init(void)
 **/
 void Data_Process(void)
 {
-  Key_Process();
+	Key_Process();
 
-  Count_Down_Process();
+	Count_Down_Process();
 
-  Mcu_com_process();
+	Mcu_com_process();
 
-  App_data_prcoess();
+
+	//clear the received index
+	if (index_rcv_time < 50)
+	{
+		index_rcv_time++;
+	}
+	else	
+	{
+		index_rcv_pre = 0;
+	}
 }
 
 
@@ -444,7 +518,7 @@ void Data_Process(void)
 **/
 void Key_Process(void)
 {
-	uint8_t   i = 0;
+	uint8_t i = 0;
 	uint8_t	j = 0;
 	uint8_t	k = 0;
 
@@ -455,35 +529,33 @@ void Key_Process(void)
 	{
 		KeyMode = KEY_IDLE;
 
-		if (Display.Mode == POWER_OFF)
+		if (display_data.mode== POWER_OFF)
 		{
-			Display.Mode = POWER_ON;
+			display_data.mode= POWER_ON;
 		}
 		else
 		{
-			Display.ModeBuf++;
-			if (Display.ModeBuf > MODE_MAX)
+			display_data.mode_buf++;
+			if (display_data.mode_buf > CURRENT_MODE_MAX)
 			{
-				Display.ModeBuf = 0;
-				Display.Mode = POWER_OFF;
+			display_data.mode_buf = 0;
+			display_data.mode= POWER_OFF;
 			}
 			else
 			{
-				Display.Mode = Display.ModeBuf;
+			display_data.mode= display_data.mode_buf;
 			}
 		}
 
-		Display.Init = true;
+		display_data.init = true;
 
 		mode_change_flag = true;
 		mode_change_time = 0;
-		
+
 		//load to user buffer
-		#if USER_DATA_EN==1
-		//sys_eeprom_write(MODE_OFFSET, (uint8_t *)&Display.ModeBuf, MODE_LEN);
-		#endif
+		enable_user_normal_flash_write();
 	}
-	
+
 	//long press the mode key
 	// wifi reset
 	else if (KeyMode == KEY_LONG)
@@ -498,56 +570,47 @@ void Key_Process(void)
 	{
 		KeyColor = KEY_IDLE;
 
-		i = Display.Mode;
+		i = display_data.mode;
 
 		mode_change_flag = true;
 		mode_change_time = 0;
 
 		if ((i != POWER_OFF) && (i != RAINBOW) && (i != COLOR_RAND) && (i != CARNIVAL) && (i != ALTERNATE))
 		{
-		  Display.Init = true;
+			display_data.init = true;
 
-		  ParaData[i].ColorVal++;
-		  if (Display.Mode == SNOW)
-		  {
-			if (ParaData[i].ColorVal > COLOR_VAL_MAX)    ParaData[i].ColorVal = 0;
-		  }
-		  else
-		  {
-		  	if (ParaData[i].ColorVal > COLOR_VAL_MAX + THEME_VAL_MAX)    ParaData[i].ColorVal = 0;
-		  }
+			mode_para_data[i].ColorVal++;
+			if (display_data.mode== SNOW)
+			{
+				if (mode_para_data[i].ColorVal > COLOR_VAL_MAX)    mode_para_data[i].ColorVal = 0;
+			}
+			else
+			{
+				if (mode_para_data[i].ColorVal > COLOR_VAL_MAX + THEME_VAL_MAX)    mode_para_data[i].ColorVal = 0;
+			}
 
-		  
-		  j = Color_Value_Get(ParaData[i].ColorVal);
-		  
-		  ParaData[i].ColorNum = j;
-		  for (k = 0; k < j; k++)
-		  {
-		    ParaData[i].Color[k].BufR = ColorData[k][R];
-		    ParaData[i].Color[k].BufG = ColorData[k][G];
-		    ParaData[i].Color[k].BufB = ColorData[k][B];
-		  }
 
-		  //Clear the old check sum
-		  ParaData[i].Chksum = 0;
-		  ParaData[i].Chksum = chksum_cal((const uint8_t *)&ParaData[i], 8 + j * 3);
+			mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
 
-			//user data load
-		  #if USER_DATA_EN==1
-		  //sys_eeprom_write(MODE_PARA_OFFSET + i * MODE_PARA_LEN, (uint8_t *)&ParaData[i], MODE_PARA_LEN);
-		  #endif
+			//Clear the old check sum
+			mode_para_data[i].Chksum = 0;
+			mode_para_data[i].Chksum = chksum_cal((const uint8_t *)&mode_para_data[i], 8 + j * 3);
+
+			enable_user_normal_flash_write();
 		}
 	}
-	
+
 	//long press the color key
 	//change the count down timer
 	else if (KeyColor == KEY_LONG)
 	{
 		KeyColor = KEY_IDLE;
 
-		cntdwn_data.cntdwn_hour++;
-		if (cntdwn_data.cntdwn_hour > 8)	cntdwn_data.cntdwn_hour = 0;
-		cntdwn_data.init = true;
+		timing_data.cntdwn_hour++;
+		if (timing_data.cntdwn_hour > 8)	timing_data.cntdwn_hour = 0;
+		cntdwn_hour_setting_flag = true;
+		setting_timing_flag(TIM_EN_CNTDWN, 1);
+		enable_user_normal_flash_write();
 	}
 }
 
@@ -558,25 +621,25 @@ void Key_Process(void)
  */
 void Count_Down_Process(void)
 {
-	if (cntdwn_data.status == CNTDWN_TURN_ON)
+	if (timing_status == TIMING_TURN_ON)
 	{
-		cntdwn_data.status = CNTDWN_IDLE;
+		timing_status = TIMING_IDLE;
 		
-		if (Display.Mode == POWER_OFF)
+		if (display_data.mode== POWER_OFF)
 		{
-			Display.Mode = POWER_ON;
-			Display.Init = true;
+			display_data.mode= POWER_ON;
+			display_data.init = true;
 		}
 	}
 
-	else if (cntdwn_data.status == CNTDWN_TURN_OFF)
+	else if (timing_status == TIMING_TURN_OFF)
 	{
-		cntdwn_data.status = CNTDWN_IDLE;
+		timing_status = TIMING_IDLE;
 		
-		if (Display.Mode != POWER_OFF)
+		if (display_data.mode!= POWER_OFF)
 		{
-			Display.Mode = POWER_OFF;
-			Display.Init = true;
+			display_data.mode= POWER_OFF;
+			display_data.init = true;
 		}
 	}
 }
@@ -588,12 +651,13 @@ void Count_Down_Process(void)
   */
 void Mcu_com_process(void)
 {
-	static uint8_t    len_pre;
-	static uint8_t*   dst = (uint8_t *)&mcu_rcv_pack;
+	static uint8_t    	len_pre;
+	static uint8_t*   	dst = (uint8_t *)&mcu_rcv_pack;
 
-	static uint8_t	mode_pre = 0xff;
-	static uint8_t	snd_index = 0x1;
+	static uint8_t		mode_pre = 0xff;
+	static uint8_t		snd_index = 0x1;
 
+	static uint8_t 		cntdwn_hour_pre = 0x0;
 
 	//check the mode change
 	if (mode_change_flag)
@@ -608,9 +672,9 @@ void Mcu_com_process(void)
 
 	//send data
 	//when the mode has changed or timer count down hour changed
-	if ((Display.Mode != mode_pre) && (Display.Mode <= MODE_MAX || Display.Mode == POWER_OFF))
+	if ((display_data.mode!= mode_pre) && (display_data.mode < MODE_MAX || display_data.mode== POWER_OFF))
 	{
-		mode_pre = Display.Mode;
+		mode_pre = display_data.mode;
 		uint8_t	snd_data[4];
 		snd_data[0] = MCU_PROTOCOL_VER;
 		snd_data[1] = snd_index;
@@ -624,9 +688,9 @@ void Mcu_com_process(void)
 		uart_write(uart0, (const char *)snd_data, 4);
 	}
 
-	else if (cntdwn_data.cntdwn_hour != cntdwn_data.pre_hour)
+	else if (timing_data.cntdwn_hour != cntdwn_hour_pre)
 	{
-		cntdwn_data.pre_hour = cntdwn_data.cntdwn_hour;
+		cntdwn_hour_pre = timing_data.cntdwn_hour;
 		
 		uint8_t	snd_data[4];
 		snd_data[0] = MCU_PROTOCOL_VER;
@@ -637,7 +701,7 @@ void Mcu_com_process(void)
 			snd_index = 1;
 		}
 		snd_data[2] = MCU_TIMER_CMD;
-		snd_data[3] = cntdwn_data.cntdwn_hour;
+		snd_data[3] = timing_data.cntdwn_hour;
 		uart_write(uart0, (const char *)snd_data, 4);
 	}
 	
@@ -661,10 +725,10 @@ void Mcu_com_process(void)
 			{
 				if (!mode_change_flag)
 				{
-					if (Display.Mode != MUSIC_MODE  && Display.Mode <= MODE_MAX)
+					if (display_data.mode!= MUSIC_MODE  && display_data.mode < MODE_MAX)
 					{
-						Display.Mode = MUSIC_MODE;
-						Display.Init = true;
+						display_data.mode= MUSIC_MODE;
+						display_data.init = true;
 					}
 
 					MusicUpdateFlag = true;
@@ -684,20 +748,6 @@ void Mcu_com_process(void)
   */
 void App_data_prcoess(void)
 {
-	static uint8_t    index_rcv_pre;
-	static uint8_t    index_rcv_time;
-
-	//clear the received index
-	if (index_rcv_time < 50)
-	{
-		index_rcv_time++;
-	}
-	else  
-	{
-		index_rcv_pre = 0;
-	}
-
-
 	//received data from voice control device
 	if (app_pack.type == VOICE_PROTOCOL_VER)
 	{
@@ -716,10 +766,10 @@ void App_data_prcoess(void)
 			{
 				if (voice_cmd.len == 1)
 				{
-					if (voice_cmd.payload[0] && Display.Mode == POWER_OFF)
+					if (voice_cmd.payload[0] && display_data.mode== POWER_OFF)
 					{
-						Display.Mode   = POWER_ON;
-						Display.Init = true;
+						display_data.mode  = POWER_ON;
+						display_data.init = true;
 					}
 				}
 			}break;
@@ -728,10 +778,10 @@ void App_data_prcoess(void)
 			{
 				if (voice_cmd.len == 1)
 				{
-					if (!voice_cmd.payload[0] && Display.Mode != POWER_OFF)
+					if (!voice_cmd.payload[0] && display_data.mode!= POWER_OFF)
 					{
-						Display.Mode = POWER_OFF;
-						Display.Init = true;
+						display_data.mode= POWER_OFF;
+						display_data.init = true;
 					}
 				}
 			}break;
@@ -741,13 +791,15 @@ void App_data_prcoess(void)
 				if (voice_cmd.len == 1)
 				{
 					uint8_t i = voice_cmd.payload[0];		//get the mode value
-					if (i > MODE_MAX)		break;
-					Display.Mode = i;
-					Display.ModeBuf = i;
-					Display.Init = true;
+					if (i > CURRENT_MODE_MAX)		break;
+					display_data.mode= i;
+					display_data.mode_buf = i;
+					display_data.init = true;
 
 					mode_change_flag = true;
 					mode_change_time = 0;
+
+					enable_user_normal_flash_write();
 				}
 			}break;
 
@@ -760,24 +812,22 @@ void App_data_prcoess(void)
 				mode_change_flag = true;
 				mode_change_time = 0;
 
-				//save the color values to ParaData
-				uint8_t j = Display.Mode;
+				//save the color values to mode_para_data
+				uint8_t j = display_data.mode;
 				uint8_t k = Color_Value_Get(i);
-				ParaData[j].ColorVal = i;
-				ParaData[j].ColorNum = k;
-				for (i = 0; i < k; i++)
-				{
-					ParaData[j].Color[i].BufR = ColorData[i][R];
-					ParaData[j].Color[i].BufG = ColorData[i][G];
-					ParaData[j].Color[i].BufB = ColorData[i][B];
-				}
+				mode_para_data[j].ColorVal = i;
+				
+				mode_para_data[j].ColorNum = setting_mode_preset_color(j, i);
 
 				//caculate the new checksum
-				ParaData[i].Chksum = 0;
-				ParaData[i].Chksum = chksum_cal((const uint8_t *)&ParaData[i], 8 + j * 3);
+				mode_para_data[i].Chksum = 0;
+				mode_para_data[i].Chksum = chksum_cal((const uint8_t *)&mode_para_data[i], 8 + j * 3);
 
 				//intialize the mode
-				Display.Init = true;
+				display_data.init = true;
+
+				//enable the function save the data to flash
+				enable_user_normal_flash_write();
 			}break;
 
 			
@@ -829,26 +879,75 @@ void App_data_prcoess(void)
 			//app data process
 			switch (app_pack.cmd)
 			{
-
+				/*[0] = mode, [1][2][3]=reserved
+				 *[4] = count down hour, [5][6][7]=reserved,
+				 *[8] = timer 1 on hour, [9] = timer 1 on minute, [10] = timer 1 off hour, [11] = timer 1 off minute,  
+				 *...
+				 *[24] = timer 5 on hour, [25] = timer 5 on minute, [26] = timer 5 off hour, [27] = timer 5 off minute, 
+				 *[28] = music enable flag,[29]=music mode value,[30]=music r,[31]=music g,[32]=music b,[33][34][35]=reserved,
+				 *[36] = vertical layer flag, [37]= vertical total,[38] = triangle layer flag,[39]=triangle total, [40] = fan layer flag,
+				 *[41]=fan total,[4243] = reserved, 
+				 *[44] = mode 1 status, [45] = mode 2 status
+				 *…
+				*/
 				case CHECK_ALL_STATUS_CMD:
 				{
 					//get the real time
 					uint16_t len = app_pack.len;
 					if (len != 3)		break;	//exit when the length is mismath
-					
-					uint8_t hour = app_pack.payload[0];
-					uint8_t minute = app_pack.payload[1];
-					uint8_t second = app_pack.payload[2];
-					if (hour >= 24 || minute >= 60 || second >= 60)		break;		//the wrong time
 
-					cntdwn_data.real_hour = hour;
-					cntdwn_data.real_min = minute;
-					cntdwn_data.real_sec = second;
+					if (app_pack.payload[0] >= 24 || app_pack.payload[1] >= 60 || app_pack.payload[2] >= 60)
+					{
+						break;
+					}
+
+					real_time.hour = app_pack.payload[0];
+					real_time.minute = app_pack.payload[1];
+					real_time.second = app_pack.payload[2];
+					real_time.msecond = 0;
+
+					uint8_t	*reply_status;
+					uint8_t *reply_status_base;
+					uint8_t	size = 44 + CURRENT_MODE_MAX + 1;
+
+					reply_status = mmalloc(size);
+					reply_status_base = reply_status;
+
+					if (reply_status == 0)	break;
+
+					*reply_status++ = display_data.mode;
+					for (uint8_t i = 0; i < 3; i++)
+					{
+						*reply_status++ = 0;		//reserved
+					}
 					
-					//reply
-					len = MODE_MAX + ALL_STATUS_PACK_BYTE;
-					uint8_t *src = (uint8_t *)&AllStatus;
-					res_to_app(ALL_STATUS_ACK, (const uint8_t *)src, len);
+					uint8_t *src = (uint8_t *)&timing_data.cntdwn_hour;
+					for (uint8_t i = 0; i < 24; i++)
+					{
+						*reply_status++ = *src++;
+					}
+
+			        
+					src = (uint8_t *)&music_data.enable_flag;
+					for (uint8_t i = 0; i < 8; i++)
+					{
+						*reply_status++ = *src++;
+					}
+					src = (uint8_t *)&layer_brief.vertical_flag;
+
+					for (uint8_t i = 0; i < 8; i++)
+					{
+						*reply_status++ = *src++;
+					}
+					for(uint8_t i = 0; i <= CURRENT_MODE_MAX; i++)
+					{
+						*reply_status++ = mode_para_data[i].Chksum;
+					}
+
+					res_to_app(ALL_STATUS_ACK, (const uint8_t *)reply_status_base, size);
+
+					mfree(reply_status);
+
 				} break;
 
 				case CHECK_MODE_STATUS_CMD:
@@ -857,39 +956,9 @@ void App_data_prcoess(void)
 					//exit if the inquire mode value is more than upper limiting value
 					if (i > MODE_MAX)   break;
 
-					uint16_t len = ParaData[i].Chksum * 3 + PARA_PACK_HEADRE_BYTE;
-					uint8_t *src = (uint8_t *)&ParaData[i];
+					uint16_t len = mode_para_data[i].Chksum * 3 + PARA_PACK_HEADRE_BYTE;
+					uint8_t *src = (uint8_t *)&mode_para_data[i];
 					res_to_app(MODE_STATUS_ACK, (const uint8_t *)src, len);
-				}break;
-
-				case CHECK_NAME_STATUS_CMD:
-				{
-					uint8_t *pname = (uint8_t *)malloc(NAME_LEN);
-					uint16_t	len = 0;
-
-					if (pname != NULL)
-					{
-						sys_eeprom_read(NAME_OFFSET, (uint8_t *)pname, NAME_LEN);
-
-						//get the name real length
-						uint8_t *p = pname;
-						while (*pname != '\0')
-						{
-							p++;
-							len++;
-						}
-
-						//reply
-						res_to_app(NAME_STATUS_ACK, (const uint8_t *)pname, len);
-
-						//free the memory
-						free(pname);
-						pname = NULL;
-					}
-					else
-					{
-						m2m_bytes_dump((u8 *)"==ERR== pname require memory error", NULL, 0);
-					}
 				}break;
 
 				//0 - turn off
@@ -898,17 +967,17 @@ void App_data_prcoess(void)
 				{
 					if (app_pack.len == 1)
 					{
-						if (app_pack.payload[0] && Display.Mode == POWER_OFF)
+						if (app_pack.payload[0] && display_data.mode== POWER_OFF)
 						{
-							Display.Mode	= POWER_ON;
-							Display.Init 	= true;
+							display_data.mode	= POWER_ON;
+							display_data.init 	= true;
 							mode_change_flag = true;
 							mode_change_time = 0;
 						}
-						else if (!app_pack.payload[0] && Display.Mode != POWER_OFF)
+						else if (!app_pack.payload[0] && display_data.mode!= POWER_OFF)
 						{
-							Display.Mode = POWER_OFF;
-							Display.Init = true;
+							display_data.mode= POWER_OFF;
+							display_data.init = true;
 							mode_change_flag = true;
 							mode_change_time = 0;
 						}
@@ -929,15 +998,18 @@ void App_data_prcoess(void)
 					mode_change_flag = true;
 					mode_change_time = 0;
 
-					Display.Init = true;
-					Display.ModeBuf = i;
-					Display.Mode = i;
-					ParaData[i].Speed = j;
-					ParaData[i].Bright = k;
-					ParaData[i].Other = l;
+					display_data.init = true;
+					display_data.mode_buf = i;
+					display_data.mode= i;
+					mode_para_data[i].Speed = j;
+					mode_para_data[i].Bright = k;
+					mode_para_data[i].Other = l;
 
-					ParaData[i].Chksum = 0;
-					ParaData[i].Chksum = chksum_cal((uint8_t *)&ParaData[i], 8 + ParaData[i].ColorNum * 3);
+					mode_para_data[i].Chksum = 0;
+					mode_para_data[i].Chksum = chksum_cal((uint8_t *)&mode_para_data[i], 8 + mode_para_data[i].ColorNum * 3);
+
+					//enable the function save the data to flash
+					enable_user_normal_flash_write();
 				}break;
 
 				//set color
@@ -948,61 +1020,172 @@ void App_data_prcoess(void)
 					uint8_t   j = app_pack.payload[1];  //colornum
 					if (i > MODE_MAX && i != MUSIC_MODE)        break;    //overflow
 					if (j > PARA_COLORNUM_MAX)                  break;    //overflow
-					if (i != Display.Mode)                      break;    //mismath with the current mode
+					if (i != display_data.mode)                 break;    //mismath with the current mode
 
 					mode_change_flag = true;
 					mode_change_time = 0;
 
-					ParaData[i].ColorNum = j;
+					mode_para_data[i].ColorNum = j;
 					for (uint8_t k = 0; k < j; k++)
 					{
-						uint8 l = k * 3 + 2;      //RGB->R inedex
-						Color_Caculate(	&ParaData[i].Color[k].BufR,	&ParaData[i].Color[k].BufG,	&ParaData[i].Color[k].BufB,
-										app_pack.payload[l], app_pack.payload[l+1],	app_pack.payload[l+2]);
+						if (k < j)
+						{
+							uint8 l = k * 3 + 2;      //RGB->R inedex
+							mode_para_data[i].RcvColor[k].BufR = app_pack.payload[l];
+							mode_para_data[i].RcvColor[k].BufG = app_pack.payload[l+1];
+							mode_para_data[i].RcvColor[k].BufB = app_pack.payload[l+2];
+							Color_Caculate(&mode_para_data[i].Color[k].BufR, &mode_para_data[i].Color[k].BufG, &mode_para_data[i].Color[k].BufB,
+										mode_para_data[i].RcvColor[k].BufR, mode_para_data[i].RcvColor[k].BufG,	mode_para_data[i].RcvColor[k].BufB);
+						}
+						else
+						{
+							mode_para_data[i].RcvColor[k].BufR = 0;
+							mode_para_data[i].RcvColor[k].BufG = 0;
+							mode_para_data[i].RcvColor[k].BufB = 0;
+							mode_para_data[i].Color[k].BufR = 0;
+							mode_para_data[i].Color[k].BufG = 0;
+							mode_para_data[i].Color[k].BufB = 0;
+						}
 					}
 
-					ParaData[i].Chksum = 0;
-					ParaData[i].ColorVal = COLOR_SELF;
-					ParaData[i].Chksum = chksum_cal((const uint8_t *)&ParaData[i], 8 + j * 3);
+					mode_para_data[i].Chksum = 0;
+					mode_para_data[i].ColorVal = COLOR_SELF;
+					mode_para_data[i].Chksum = chksum_cal((const uint8_t *)&mode_para_data[i], 8 + j * 3);
 
-					Display.Init = true;
+					display_data.init = true;
 
-					//printf("=RGB=(%d, %d, %d)\n", ParaData[i].Color[0].BufR, ParaData[i].Color[0].BufG, ParaData[i].Color[0].BufB);
+					//enable the function save the data to flash
+					enable_user_normal_flash_write();
+
+					//printf("=RGB=(%d, %d, %d)\n", mode_para_data[i].Color[0].BufR, mode_para_data[i].Color[0].BufG, mode_para_data[i].Color[0].BufB);
+				}break;
+
+				case SET_MODE_COLOR_CMD:
+				{
+					uint8_t   	mode = app_pack.payload[0];  //mode
+					uint8_t   	speed = app_pack.payload[1];  //
+					uint8_t		bright = app_pack.payload[2];
+					uint8_t		other = app_pack.payload[3];
+					if (mode > MODE_MAX && i != MUSIC_MODE)     break;    //overflow
+					if (speed > PARA_SPEED_MAX)                 break;    //overflow
+					if (bright > PARA_BRIGHT_MAX)				break;
+					if (other > PARA_OTHER_MAX)					break;
+
+					mode_change_flag = true;
+					mode_change_time = 0;
+
+					uint8_t j = app_pack.payload[4];
+					mode_para_data[i].ColorNum = j;
+					for (uint8_t k = 0; k < j; k++)
+					{
+						if (k < j)
+						{
+							uint8 l = k * 3 + 2;      //RGB->R inedex
+							mode_para_data[i].RcvColor[k].BufR = app_pack.payload[l];
+							mode_para_data[i].RcvColor[k].BufG = app_pack.payload[l+1];
+							mode_para_data[i].RcvColor[k].BufB = app_pack.payload[l+2];
+							Color_Caculate(&mode_para_data[i].Color[k].BufR, &mode_para_data[i].Color[k].BufG, &mode_para_data[i].Color[k].BufB,
+										mode_para_data[i].RcvColor[k].BufR, mode_para_data[i].RcvColor[k].BufG,	mode_para_data[i].RcvColor[k].BufB);
+						}
+						else
+						{
+							mode_para_data[i].RcvColor[k].BufR = 0;
+							mode_para_data[i].RcvColor[k].BufG = 0;
+							mode_para_data[i].RcvColor[k].BufB = 0;
+							mode_para_data[i].Color[k].BufR = 0;
+							mode_para_data[i].Color[k].BufG = 0;
+							mode_para_data[i].Color[k].BufB = 0;
+						}
+					}
+
+					display_data.init = true;
+					display_data.mode_buf = mode;
+					display_data.mode= mode;
+					mode_para_data[i].Speed = speed;
+					mode_para_data[i].Bright = bright;
+					mode_para_data[i].Other = other;
+
+					mode_para_data[mode].Chksum = 0;
+					mode_para_data[mode].ColorVal = COLOR_SELF;
+					mode_para_data[mode].Chksum = chksum_cal((const uint8_t *)&mode_para_data[mode], 8 + j * 3);
+
+					//enable the function save the data to flash
+					enable_user_normal_flash_write();
 				}break;
 
 				case SET_CNTDWN_HOUR_CMD:
 				{
-					
+					uint16_t len = app_pack.len;
+					if (len != 2)	break;
+
+					if (app_pack.payload[1] > 0 && app_pack.payload[1] <= 12)
+					{
+						timing_data.cntdwn_hour = app_pack.payload[1];
+						cntdwn_hour_setting_flag = true;
+						setting_timing_flag(TIM_EN_CNTDWN, app_pack.payload[0]);
+
+						//reply
+						res_to_app(CNTDWN_HOUR_STATUS_ACK, (const uint8_t *)&app_pack.payload[0], 2);
+
+						//enable the function save the data to flash
+						enable_user_normal_flash_write();
+					}
+				}break;
+
+				case SET_REALTIME_CMD:
+				{
+					uint16_t len = app_pack.len;
+					if (len != 3)	break;
+
+					if (app_pack.payload[0] >= 24 || app_pack.payload[1] >= 60 || app_pack.payload[2] >= 60)
+					{
+						break;
+					}
+					else
+					{
+						real_time.hour = app_pack.payload[0];
+						real_time.minute = app_pack.payload[1];
+						real_time.second = app_pack.payload[2];
+						real_time.msecond = 0;
+						//reply
+						res_to_app(REALTIME_STATUS_ACK, (const uint8_t *)&app_pack.payload[0], 3);
+					}
 				}break;
 
 				case SET_CNTDWN_TIME_CMD:
 				{
 					uint16_t len = app_pack.len;
-					if (len != 4)	break;		//mismatch
+					if (len != 6)	break;		//mismatch
 
-					uint8_t on_hour = app_pack.payload[0];
-					uint8_t on_min = app_pack.payload[1];
-					uint8_t off_hour = app_pack.payload[2];
-					uint8_t off_min = app_pack.payload[3];
+					uint8_t grp = app_pack.payload[1];
+					if (grp >= TIMING_GRP_MAX)		break;
+					
+					uint8_t on_hour = app_pack.payload[2];
+					uint8_t on_min = app_pack.payload[3];
+					uint8_t off_hour = app_pack.payload[4];
+					uint8_t off_min = app_pack.payload[5];
+					
 					//wrong time - instead the data by 0xff in order to reply to APP
 					if (on_hour >= 24 || on_min >= 60 || off_hour >= 24 || off_min >= 60)
 					{
-						app_pack.payload[0] = 0xff;
-						app_pack.payload[1] = 0xff;
-						app_pack.payload[2] = 0xff;
-						app_pack.payload[3] = 0xff;
+						break;
 					}
 					//correct time
 					else
 					{
-						cntdwn_data.on_hour = on_hour;
-						cntdwn_data.on_min = on_min;
-						cntdwn_data.off_hour = off_hour;
-						cntdwn_data.off_min = off_min;
+						timing_data.timing_grp[grp].on_hour = on_hour;
+						timing_data.timing_grp[grp].on_minute = on_min;
+						timing_data.timing_grp[grp].off_hour = off_hour;
+						timing_data.timing_grp[grp].off_minute = off_min;
+
+						setting_timing_flag((TimingEnFlag_E)grp, app_pack.payload[0]);
+						
+						//enable the function save the data to flash
+						enable_user_normal_flash_write();
 					}
 
 					//reply
-					res_to_app(CNTDWN_STATUS_ACK, (const uint8_t *)&app_pack.payload[0], 4);
+					res_to_app(CNTDWN_TIME_STATUS_ACK, (const uint8_t *)&app_pack.payload[0], 6);
 				}break;
 
 	//--------------------------------------------------------------------------------
@@ -1015,17 +1198,17 @@ void App_data_prcoess(void)
 					
 					if (app_pack.len == 1)
 					{
-						if (app_pack.payload[0] == 0 && (Display.Mode == LAYOUT_ENTER || Display.Mode == LAYOUT_TEST))
+						if (app_pack.payload[0] == 0 && (display_data.mode== LAYOUT_ENTER || display_data.mode== LAYOUT_TEST))
 						{
-							Display.Mode = LAYOUT_CANCEL;
-							Display.Init = true;
+							display_data.mode= LAYOUT_CANCEL;
+							display_data.init = true;
 							reply = 1;
 						}
 
-						else if (Display.Mode != LAYOUT_ENTER)
+						else if (display_data.mode!= LAYOUT_ENTER)
 						{
-							Display.Mode = LAYOUT_ENTER;
-							Display.Init = true;
+							display_data.mode= LAYOUT_ENTER;
+							display_data.init = true;
 							reply = 1;
 						}
 					}
@@ -1054,12 +1237,12 @@ void App_data_prcoess(void)
 						#endif
 						
 						if (LayerTest < LAYER_MAX && head < LED_TOTAL && tail < LED_TOTAL 
-						&& (Display.Mode == LAYOUT_ENTER || Display.Mode == LAYOUT_TEST))
+						&& (display_data.mode== LAYOUT_ENTER || display_data.mode== LAYOUT_TEST))
 						{
 							LayerTemp[LayerTest].Head = head;
 							LayerTemp[LayerTest].Tail = tail;
-							Display.Mode = LAYOUT_TEST;
-							Display.Init = true;
+							display_data.mode= LAYOUT_TEST;
+							display_data.init = true;
 							reply = 1;
 						}
 					}
@@ -1088,9 +1271,9 @@ void App_data_prcoess(void)
 							
 							if (chk == chkcal)
 							{
-								Display.Mode = LAYOUT_SAVE;
-								Display.Init = true;
-								Display.LayoutNum = app_pack.payload[1];
+								display_data.mode= LAYOUT_SAVE;
+								display_data.init = true;
+								//display_data.LayoutNum = app_pack.payload[1];
 								reply = 1;
 							}
 						}
@@ -1099,15 +1282,15 @@ void App_data_prcoess(void)
 					//exit the layout mode if error occur
 					if (reply == 0)
 					{
-						Display.Mode = LAYOUT_CANCEL;
-						Display.Init = true;
+						display_data.mode= LAYOUT_CANCEL;
+						display_data.init = true;
 					}
 
 					//save the layer information to user flash
 					else
 					{
 						#if USER_DATA_EN==1
-						sys_eeprom_write(LAYOUT_OFFSET, (uint8_t *)&Display.LayoutNum, LAYOUT_LEN);
+						sys_eeprom_write(LAYOUT_OFFSET, (uint8_t *)&display_data.LayoutNum, LAYOUT_LEN);
 						uint8_t len = LayerTest * 4;
 						sys_eeprom_write(LAYER_NUM_OFFSET, (uint8_t *)&len, LAYER_NUM_LEN);
 						sys_eeprom_write(LAYER_OFFSET, (uint8_t *)&LayerTemp, len);
@@ -1121,7 +1304,7 @@ void App_data_prcoess(void)
 				{
 					uint8_t		reply = 0;
 					uint16_t	cnt = app_pack.len / 7;
-					Display.Mode = LAYOUT_PHOTO_CTRL;
+					display_data.mode= LAYOUT_PHOTO_CTRL;
 
 					while(cnt)
 					{
@@ -1163,7 +1346,7 @@ void App_data_prcoess(void)
 					}
 					reply = 1;
 
-					Display.Mode = LAYOUT_PHOTO_CTRL;
+					display_data.mode= LAYOUT_PHOTO_CTRL;
 
 					uint16_t i = 0;
 					uint8_t j = 0;
@@ -1195,7 +1378,7 @@ void App_data_prcoess(void)
 				{
 					uint8_t		reply = 0;
 					uint16_t	cnt = app_pack.len / 5;
-					Display.Mode = LAYOUT_PHOTO_CTRL;
+					display_data.mode= LAYOUT_PHOTO_CTRL;
 
 					while(cnt)
 					{
@@ -1228,7 +1411,7 @@ void App_data_prcoess(void)
 					uint16_t cnt = 0;
 					uint16_t color = 0;
 
-					Display.Mode = LAYOUT_PHOTO_CTRL;
+					display_data.mode= LAYOUT_PHOTO_CTRL;
 
 					while((cnt < num) && (cnt < LED_TOTAL))
 					{
@@ -1252,7 +1435,7 @@ void App_data_prcoess(void)
 					uint16_t cnt = 0;
 					uint16_t color = 0;
 
-					Display.Mode = LAYOUT_PHOTO_CTRL;
+					display_data.mode= LAYOUT_PHOTO_CTRL;
 
 					while((cnt < num) && ((cnt+200) < LED_TOTAL))
 					{
@@ -1279,15 +1462,15 @@ void App_data_prcoess(void)
 					{
 						if (app_pack.len == 1)
 						{
-							if (app_pack.payload[0] && Display.Mode == POWER_OFF)
+							if (app_pack.payload[0] && display_data.mode== POWER_OFF)
 							{
-								Display.Mode   = POWER_ON;
-								Display.Init = true;
+								display_data.mode  = POWER_ON;
+								display_data.init = true;
 							}
-							else if (!app_pack.payload[0] && Display.Mode != POWER_OFF)
+							else if (!app_pack.payload[0] && display_data.mode!= POWER_OFF)
 							{
-								Display.Mode = POWER_OFF;
-								Display.Init = true;
+								display_data.mode= POWER_OFF;
+								display_data.init = true;
 							}
 						}
 					}break;
@@ -1298,9 +1481,9 @@ void App_data_prcoess(void)
 						{
 							uint8_t i = app_pack.payload[0];		//get the mode value
 							if (i > MODE_MAX)		break;
-							Display.Mode = i;
-							Display.ModeBuf = i;
-							Display.Init = true;
+							display_data.mode= i;
+							display_data.mode_buf = i;
+							display_data.init = true;
 
 							mode_change_flag = true;
 							mode_change_time = 0;
@@ -1316,24 +1499,24 @@ void App_data_prcoess(void)
 						mode_change_flag = true;
 						mode_change_time = 0;
 
-						//save the color values to ParaData
-						uint8_t j = Display.Mode;
+						//save the color values to mode_para_data
+						uint8_t j = display_data.mode;
 						uint8_t k = Color_Value_Get(i);
-						ParaData[j].ColorVal = i;
-						ParaData[j].ColorNum = k;
+						mode_para_data[j].ColorVal = i;
+						mode_para_data[j].ColorNum = k;
 						for (i = 0; i < k; i++)
 						{
-							ParaData[j].Color[i].BufR = ColorData[i][R];
-							ParaData[j].Color[i].BufG = ColorData[i][G];
-							ParaData[j].Color[i].BufB = ColorData[i][B];
+							mode_para_data[j].Color[i].BufR = ColorData[i][R];
+							mode_para_data[j].Color[i].BufG = ColorData[i][G];
+							mode_para_data[j].Color[i].BufB = ColorData[i][B];
 						}
 
 						//caculate the new checksum
-						ParaData[i].Chksum = 0;
-						ParaData[i].Chksum = chksum_cal((const uint8_t *)&ParaData[i], 8 + j * 3);
+						mode_para_data[i].Chksum = 0;
+						mode_para_data[i].Chksum = chksum_cal((const uint8_t *)&mode_para_data[i], 8 + j * 3);
 
 						//intialize the mode
-						Display.Init = true;
+						display_data.init = true;
 					}break;
 
 				case VOICE_SET_THEME_CMD:
@@ -1345,25 +1528,25 @@ void App_data_prcoess(void)
 						mode_change_flag = true;
 						mode_change_time = 0;
 
-						//save the color values to ParaData
+						//save the color values to mode_para_data
 						i = i + COLOR_VAL_MAX + 1;		//0x0f + 1
-						uint8_t j = Display.Mode;
+						uint8_t j = display_data.mode;
 						uint8_t k = Color_Value_Get(i);
-						ParaData[j].ColorVal = i;
-						ParaData[j].ColorNum = k;
+						mode_para_data[j].ColorVal = i;
+						mode_para_data[j].ColorNum = k;
 						for (i = 0; i < k; i++)
 						{
-							ParaData[j].Color[i].BufR = ColorData[i][R];
-							ParaData[j].Color[i].BufG = ColorData[i][G];
-							ParaData[j].Color[i].BufB = ColorData[i][B];
+							mode_para_data[j].Color[i].BufR = ColorData[i][R];
+							mode_para_data[j].Color[i].BufG = ColorData[i][G];
+							mode_para_data[j].Color[i].BufB = ColorData[i][B];
 						}
 
 						//caculate the new checksum
-						ParaData[i].Chksum = 0;
-						ParaData[i].Chksum = chksum_cal((const uint8_t *)&ParaData[i], 8 + j * 3);
+						mode_para_data[i].Chksum = 0;
+						mode_para_data[i].Chksum = chksum_cal((const uint8_t *)&mode_para_data[i], 8 + j * 3);
 
 						//initialize the mode
-						Display.Init = true;
+						display_data.init = true;
 					}break;
 
 				case VOICE_SET_CNTDWN_HOUR_CMD:
@@ -1376,35 +1559,6 @@ void App_data_prcoess(void)
 
 					}break;
 
-				case RENAME_DEVICE_CMD:
-					{
-						//check the length
-						if (app_pack.payload[1] < 3 && app_pack.payload[1] > 50)	break;
-
-						uint8_t *src = &app_pack.payload[2];
-						uint8_t len = app_pack.payload[1];
-						uint8_t i = chksum_cal((const uint8_t *)src, len);
-						if (i == app_pack.payload[0])
-						{
-							AllStatus.nam_check = i;
-
-							//set the last char to '\0'
-							app_pack.payload[len + 2] = '\0';
-
-							#if USER_DATA_EN==1
-							//save the name to flash
-							sys_eeprom_write(NAME_OFFSET, (uint8_t *)src, len + 1);
-
-							//save the name checksum to flash
-							sys_eeprom_write(NAME_CHK_OFFSET, (uint8_t *)&AllStatus.nam_check, NAME_CHK_LEN);
-							#endif
-						}
-						else	i = AllStatus.nam_check;
-
-						//reply
-						res_to_app(NAME_MODIFY_ACK,(const uint8_t *)&i, 1);
-						
-					}break;
 
 				default:
 					{
@@ -1432,7 +1586,7 @@ void res_to_app(uint8_t cmd,const uint8_t *pdata, uint16_t len)
 {
 	static uint8_t    index_snd_pre;
 
-	if (index_snd_pre == 255) index_snd_pre = 0;
+	if (index_snd_pre == 255) index_snd_pre = 1;
 	else                      index_snd_pre++;
 	app_ack_pack.type = PRODUCT_TYPE;
 	app_ack_pack.ver = APP_PROTOCOL_VER;
@@ -1548,6 +1702,45 @@ uint8_t   chksum_cal(const uint8_t *src, uint16_t len)
   while (len--) chksum ^= *buffer++;
   return chksum;
 }
+
+
+/**
+  * FunctionName setting_mode_preset_color
+  * Input
+  *       mode
+  *		  color
+  * Output
+  *			the color number
+  * Brief
+  *		  To set the mode's color buffer 
+  */
+uint8_t	setting_mode_preset_color(uint8_t mode, uint8_t color)
+{
+	uint8_t j = Color_Value_Get(color);
+
+	for (uint8_t k = 0; k < PARA_COLORNUM_MAX+1; k++)
+	{
+		if (k < j)
+		{
+			mode_para_data[mode].RcvColor[k].BufR = ColorData[k][R];
+			mode_para_data[mode].RcvColor[k].BufG = ColorData[k][G];
+			mode_para_data[mode].RcvColor[k].BufB = ColorData[k][B];
+			mode_para_data[mode].Color[k].BufR = ColorData[k][R];
+			mode_para_data[mode].Color[k].BufG = ColorData[k][G];
+			mode_para_data[mode].Color[k].BufB = ColorData[k][B];
+		}
+		else
+		{
+			mode_para_data[mode].RcvColor[k].BufR = 0;
+			mode_para_data[mode].RcvColor[k].BufG = 0;
+			mode_para_data[mode].RcvColor[k].BufB = 0;
+			mode_para_data[mode].Color[k].BufR = 0;
+			mode_para_data[mode].Color[k].BufG = 0;
+			mode_para_data[mode].Color[k].BufB = 0;
+		}
+	}
+}
+
 
 
 /****************************************************************************
@@ -1820,3 +2013,23 @@ uint8_t Color_Value_Get(uint8_t ColorNumBuf)
 
   	return colorBuf;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
