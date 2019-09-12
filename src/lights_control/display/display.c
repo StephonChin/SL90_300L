@@ -151,7 +151,7 @@ uint8_t  Para_Err_Check(ModePara_t * para)
 	}
 
 	//reset the color to red
-	if (para->ColorNum > PARA_COLORNUM_MAX || para->ColorNum == 0 || (para->ColorVal > (COLOR_VAL_MAX+THEME_VAL_MAX) && para->ColorVal != 0xff))
+	if (para->ColorNum > PARA_COLORNUM_MAX || (para->ColorVal > (COLOR_VAL_MAX+THEME_VAL_MAX) && para->ColorVal != 0xff))
 	{
 		para->ColorNum = 0x1;
 		para->ColorVal = 0;
@@ -168,6 +168,7 @@ uint8_t  Para_Err_Check(ModePara_t * para)
 	{
 		para->Chksum = 0;
 		para->Chksum = chksum_cal((const uint8_t *)para, 8+para->ColorNum * 3);
+		para->Chksum ^= para->ColorVal;
 	}
 
 	return err;
