@@ -61,8 +61,8 @@ int app_cmd_handler(uint8_t *pdata, int rcv_len, M2M_packet_T **pp_ack_data)
 
         
 		
-        printf("\n== ACK == ");
-        #if 1
+        //printf("\n== ACK == ");
+        #if 0
         uint8_t x = p_ack->len;
         uint8_t *p = (uint8_t *)&app_ack_pack;
         while(x--)

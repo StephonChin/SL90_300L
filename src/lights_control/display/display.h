@@ -16,20 +16,14 @@
 #include "../leddrv/ws2812_i2s.h"
 #include "../../include/m2m_log.h"
 #include "../process/data_process.h"
+#include "layout.h"
 
 
 //const value define
-#define     LAYER_MAX             50
-
 #define     COLOR_VAL_MAX         (uint8_t)0x0f  	/* the single colors count  number */
 #define     THEME_VAL_MAX         (uint8_t)0x0d   	/* the themes count number */
 #define     FADE_LEVEL            (uint8_t)15
 
-/*
- * string layer define
- */
-#define		STR_LAYER_MAX		20
-#define		STR_LAYER_SEC		15
 
 /*
  * Parameter value
@@ -40,6 +34,13 @@
 #define     PARA_OTHER_MAX        	(uint8_t)10
 #define     PARA_COLORNUM_MAX     	(uint8_t)15   /* each mode allow to own MODE_COLOR_MAX color value */
 
+
+#define		DYNAMIC_MAX_TIME		(uint8_t)100
+
+#define		CUSTOM_STEADY_1			(uint8_t)0xe1
+#define		CUSTOM_STEADY_2			(uint8_t)0xe2
+#define		CUSTOM_STEADY_3			(uint8_t)0xe3
+#define		CUSTOM_DYNAMIC_1 		(uint8_t)0xe8
 
 #define     POWER_OFF             	(uint8_t)0xf0
 #define     POWER_ON              	(uint8_t)0xf1
@@ -86,10 +87,6 @@
 #define 	SNOW_BOTTOM_HOLD        6
 #define 	SNOW_FREQ               30
 
-
-#define		LAYOUT_NONE				0
-#define		LAYOUT_2D				1
-#define		LAYOUT_3D				2
 //type redefine
 typedef struct
 {
@@ -124,14 +121,6 @@ typedef struct
 	}Color[PARA_COLORNUM_MAX + 1];
 }ModePara_t;
 
-typedef struct _LAYER_TYPE
-{
-  uint16_t    Head;
-  uint16_t    Tail;
-}Layer_t;
-
-
-
 
 //exported functions
 void Display_Control(void);
@@ -149,6 +138,8 @@ void Display_Layout_Cancel(void);
 void Display_Layout_Test(void);
 void Display_Layout_Save(void);
 void Display_Music(void);
+void Display_Custom_Steady(uint8_t sec);
+void Display_Custom_Dynamic(void);
 
 //string functions
 void Display_Str_Steady(void);
@@ -192,13 +183,9 @@ void Display_Layout_Triangle_Right(void);
 //exported parameters
 extern Display_t    display_data;
 extern ModePara_t   mode_para_data[];
-extern Layer_t      Layer[];
-extern Layer_t 		LayerTemp[];
-extern uint8_t      LayerMax;
-extern uint8_t		LayerTest;
 extern uint8_t 		MusicMode;
 extern bool			MusicUpdateFlag;
-
+extern uint8_t		DynamicTimeFlag[];
 
 
 

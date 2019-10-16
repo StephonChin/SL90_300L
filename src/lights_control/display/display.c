@@ -11,12 +11,10 @@
 //global parameters
 Display_t   display_data;
 ModePara_t  mode_para_data[MODE_MAX + 1];
-Layer_t     Layer[LAYER_MAX];
-Layer_t 	LayerTemp[LAYER_MAX];
-uint8_t     LayerMax;
-uint8_t		LayerTest;
 uint8_t 	MusicMode;
 bool		MusicUpdateFlag;
+uint8_t		DynamicTimeFlag[DYNAMIC_MAX_TIME];
+
 
 
 uint8_t           SpeedCtrl;
@@ -59,51 +57,46 @@ bool			  ModeFirstFlag;
   */
 void Display_Control(void)
 {
-	//common mode display
-	if (display_data.mode >= COMMON_MODE_LIMIT)
-	{
-		switch (display_data.mode)
-		{  
-			case POWER_OFF:   		Display_Power_Off();                break;
-			case POWER_ON:    		Display_Power_On();                 break;
-			case RED_FLASH:   		Display_All_Flash(250, 0, 0);       break;
-			case GREEN_FLASH: 		Display_All_Flash(0, 250, 0);       break;
-			case BLUE_FLASH:  		Display_All_Flash(0, 0, 250);       break;
-			case LAYOUT_PHOTO_CTRL:	Display_Layout_Photo_Ctrl();		break;
-			case LAYOUT_ENTER: 		Display_Layout_Enter();				break;
-			case LAYOUT_CANCEL: 	Display_Layout_Cancel();			break;
-			case LAYOUT_TEST:		Display_Layout_Test();				break;
-			case LAYOUT_SAVE:		Display_Layout_Save();				break;
-			case MUSIC_MODE:		Display_Music();					break;
-			default:  break;
-		}
-
-		return;
-	}
-
 	//tree mode display
 	switch (display_data.mode)
 	{
-		case STEADY:      	Display_Tree_Steady();        	break;
-		case SPARKLE:     	Display_Tree_Sparkle();       	break;
-		case RAINBOW:     	Display_Tree_Rainbow();       	break;
-		case FADE:        	Display_Tree_Fade();          	break;
-		case SNOW:        	Display_Tree_Snow();          	break;
-		case SNAKE:       	Display_Tree_Snake();         	break;
-		case TWINKLE:     	Display_Tree_Twinkle();       	break;
-		case FIREWORKS:   	Display_Tree_Fireworks();     	break;
-		case VERTIGO:     	Display_Tree_Vertigo();       	break;
-		case HORIZONTAL:  	Display_Tree_Horizontal();    	break;
-		case WAVES:       	Display_Tree_Waves();         	break;
-		case UPDWN:       	Display_Tree_Updwn();         	break;
-		case DIAGONAL:    	Display_Tree_Diagonal();      	break;
-		case SUNSET:      	Display_Tree_Sunset();        	break;
-		case VINTAGE:     	Display_Tree_Vintage();       	break;
-		case GLOW:        	Display_Tree_Glow();          	break;
-		case COLOR_RAND:  	Display_Tree_Color_Rand();    	break;
-		case CARNIVAL:		Display_Tree_Carnival();	 	break;
-		case ALTERNATE:		Display_Tree_Alternate();	 	break;
-		default:    										break;
+		case STEADY:      		Display_Tree_Steady();        	break;
+		case SPARKLE:     		Display_Tree_Sparkle();       	break;
+		case RAINBOW:     		Display_Tree_Rainbow();       	break;
+		case FADE:        		Display_Tree_Fade();          	break;
+		case SNOW:        		Display_Tree_Snow();          	break;
+		case SNAKE:       		Display_Tree_Snake();         	break;
+		case TWINKLE:     		Display_Tree_Twinkle();       	break;
+		case FIREWORKS:   		Display_Tree_Fireworks();     	break;
+		case VERTIGO:     		Display_Tree_Vertigo();       	break;
+		case HORIZONTAL:  		Display_Tree_Horizontal();    	break;
+		case WAVES:       		Display_Tree_Waves();         	break;
+		case UPDWN:       		Display_Tree_Updwn();         	break;
+		case DIAGONAL:    		Display_Tree_Diagonal();      	break;
+		case SUNSET:      		Display_Tree_Sunset();        	break;
+		case VINTAGE:     		Display_Tree_Vintage();       	break;
+		case GLOW:        		Display_Tree_Glow();          	break;
+		case COLOR_RAND:  		Display_Tree_Color_Rand();    	break;
+		case CARNIVAL:			Display_Tree_Carnival();	 	break;
+		case ALTERNATE:			Display_Tree_Alternate();	 	break;
+
+		case CUSTOM_STEADY_1:	Display_Custom_Steady(0);		break;
+		case CUSTOM_STEADY_2:	Display_Custom_Steady(1);		break;
+		case CUSTOM_STEADY_3:	Display_Custom_Steady(2);		break;
+		case CUSTOM_DYNAMIC_1:	Display_Custom_Dynamic();		break;
+		
+		case POWER_OFF:   		Display_Power_Off();                break;
+		case POWER_ON:    		Display_Power_On();                 break;
+		case RED_FLASH:   		Display_All_Flash(250, 0, 0);       break;
+		case GREEN_FLASH: 		Display_All_Flash(0, 250, 0);       break;
+		case BLUE_FLASH:  		Display_All_Flash(0, 0, 250);       break;
+		case LAYOUT_PHOTO_CTRL:	Display_Layout_Photo_Ctrl();		break;
+		case LAYOUT_ENTER: 		Display_Layout_Enter();				break;
+		case LAYOUT_CANCEL: 	Display_Layout_Cancel();			break;
+		case LAYOUT_TEST:		Display_Layout_Test();				break;
+		case LAYOUT_SAVE:		Display_Layout_Save();				break;
+		case MUSIC_MODE:		Display_Music();					break;
+		default:  break;
 	}
 }
 

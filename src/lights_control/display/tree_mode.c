@@ -6,6 +6,93 @@
 *********************************************************************/
 #include "display.h"
 
+
+static void Shift_N(Layer_T *p, uint8_t *r, uint8_t *g, uint8_t *b);
+static void Shift_P(Layer_T *p, uint8_t *r, uint8_t *g, uint8_t *b);
+static void Shift_Vertical_UpDown(uint8_t *r, uint8_t *g, uint8_t *b);
+static void Shift_Vertical_DownUp(uint8_t *r, uint8_t *g, uint8_t *b);
+static void Shift_Triangle_RightLeft(uint8_t *r, uint8_t *g, uint8_t *b);
+static void Shift_Fan_LeftRight(uint8_t *r, uint8_t *g, uint8_t *b);
+
+
+
+static void Shift_N(Layer_T *p, uint8_t *r, uint8_t *g, uint8_t *b)
+{
+	uint16_t led = 0;
+	uint16_t led1 =0;
+
+	for (uint8_t i = 0; i < p->layer_total - 1; i++)
+	{
+		led = p->head[i];
+		led1 = p->head[i+1];
+		LedData[led].DutyR = LedData[led1].DutyR;
+		LedData[led].DutyG = LedData[led1].DutyG;
+		LedData[led].DutyB = LedData[led1].DutyB;
+		
+	}
+	led = p->head[p->layer_total-1];
+	LedData[led].DutyR = *r;
+	LedData[led].DutyG = *g;
+	LedData[led].DutyB = *b;
+
+	for (uint16_t i = 0; i < LED_TOTAL; i++)
+	{
+		uint8_t layer = p->info[i];
+		led = p->head[layer];
+		LedData[i].DutyR = LedData[led].DutyR;
+		LedData[i].DutyG = LedData[led].DutyG;
+		LedData[i].DutyB = LedData[led].DutyB;
+	}
+}
+static void Shift_P(Layer_T *p, uint8_t *r, uint8_t *g, uint8_t *b)
+{
+	uint16_t led = 0;
+	uint16_t led1 =0;
+
+	for (uint8_t i = p->layer_total - 1; i > 0; i--)
+	{
+		led = p->head[i];
+		led1 = p->head[i-1];
+		LedData[led].DutyR = LedData[led1].DutyR;
+		LedData[led].DutyG = LedData[led1].DutyG;
+		LedData[led].DutyB = LedData[led1].DutyB;
+		
+	}
+	led = p->head[0];
+	LedData[led].DutyR = r;
+	LedData[led].DutyG = g;
+	LedData[led].DutyB = b;
+
+	for (uint16_t i = 0; i < LED_TOTAL; i++)
+	{
+		uint8_t layer = p->info[i];
+		led = p->head[layer];
+		LedData[i].DutyR = LedData[led].DutyR;
+		LedData[i].DutyG = LedData[led].DutyG;
+		LedData[i].DutyB = LedData[led].DutyB;
+	}
+}
+
+
+static void Shift_Vertical_UpDown(uint8_t *r, uint8_t *g, uint8_t *b)
+{
+	Shift_N(&vertical_layer, r, g, b);
+}
+static void Shift_Vertical_DownUp(uint8_t *r, uint8_t *g, uint8_t *b)
+{
+	Shift_P(&vertical_layer, r, g, b);
+}
+static void Shift_Triangle_RightLeft(uint8_t *r, uint8_t *g, uint8_t *b)
+{
+	Shift_N(&triangle_layer, r, g, b);
+}
+static void Shift_Fan_LeftRight(uint8_t *r, uint8_t *g, uint8_t *b)
+{
+	Shift_N(&fan_layer, r, g, b);
+}
+
+
+
 /**
   * FunctionName    Display_str_steady
   */
@@ -147,35 +234,7 @@ void Display_Tree_Rainbow(void)
 	      } break;
 	    }
 	    
-	    #if 0
-	    for (temp = 0; temp < LayerMax - 1; temp++){
-	      temp2 = Layer[temp + 1].Head;
-	      for (temp1 = Layer[temp].Head; temp1 <= Layer[temp].Tail; temp1++){
-	        LedData[temp1].DutyR = LedData[temp2].DutyR;
-	        LedData[temp1].DutyG = LedData[temp2].DutyG;
-	        LedData[temp1].DutyB = LedData[temp2].DutyB;
-	      }
-	    }
-	    
-	    temp = LayerMax - 1;
-	    for (temp1 = Layer[temp].Head; temp1 <= Layer[temp].Tail; temp1++){
-	      LedData[temp1].DutyR = TempR;
-	      LedData[temp1].DutyG = TempG;
-	      LedData[temp1].DutyB = TempB;
-	    }
-	    #else
-		for (temp = 0; temp < LED_TOTAL - 1; temp++)
-		{
-			LedData[temp].DutyR = LedData[temp + 1].DutyR;
-			LedData[temp].DutyG = LedData[temp + 1].DutyG;
-			LedData[temp].DutyB = LedData[temp + 1].DutyB;
-		}
-
-		LedData[LED_TOTAL - 1].DutyR = TempR;
-		LedData[LED_TOTAL - 1].DutyG = TempG;
-		LedData[LED_TOTAL - 1].DutyB = TempB;
-
-	    #endif
+	    Shift_Vertical_UpDown(&TempR, &TempG, &TempB);
 	}
   }
 }
@@ -479,6 +538,111 @@ void Display_Tree_Sparkle(void)
   */
 void Display_Tree_Snow(void)
 {
+#if 1
+	if(display_data.init == true)
+	{	
+	    display_data.init = false;
+
+	    Para_Err_Check(&mode_para_data[SNOW]);
+	    
+	    //BrightLevel = PARA_BRIGHT_MAX - ParaData[SNOW].Bright + 1;
+		BrightLevel=1;
+		
+		SpeedCtrl = 0;
+	    OtherCtrl = 0;
+	    TempColor = 0;
+	    TempStep  = 0;
+	    LayerStep = 0;
+	    
+		TempR = mode_para_data[SNOW].Color[TempColor].BufR;
+	    TempG = mode_para_data[SNOW].Color[TempColor].BufG;
+	    TempB = mode_para_data[SNOW].Color[TempColor].BufB;
+	    
+	    TopR = TempR;
+	    TopG = TempG;
+	    TopB = TempB;
+	    
+	    FadeR = TopR / FADE_LEVEL;
+	    FadeG = TopG / FADE_LEVEL;
+	    FadeB = TopB / FADE_LEVEL;
+	    
+	    
+	    Display_All_Set(0,0,0);
+	    return;
+	}
+  
+  
+	SpeedCtrl++;
+	if (SpeedCtrl > (PARA_SPEED_MAX - mode_para_data[SNOW].Speed + 2))
+	{
+		SpeedCtrl = 0;
+
+	    switch (TempStep)
+	    {
+			case 0:
+			{
+				if (LayerStep < vertical_layer.layer_total)
+				{
+					TempR = TopR;
+					TempG = TopG;
+					TempB = TopB;
+					LayerStep++;
+				}
+				else
+				{
+					TempStep++;
+					LayerStep = 0;
+				}
+			}break;
+
+			case 1:
+			{
+				if (TempR > 0 || TempG > 0 || TempB > 0)
+				{
+					TempR -= FadeR;
+					TempG -= FadeG;
+					TempB -= FadeB;
+				}
+				else
+				{
+					TempStep++;
+				}
+			}break;
+
+			case 2:
+			{
+				if (LayerStep < vertical_layer.layer_total)
+				{
+					LayerStep++;
+				}
+				else
+				{
+					TempStep++;
+				}
+			}break;
+
+			default:
+			{
+				TempStep = 0;
+				LayerStep = 0;
+				TempColor++;
+				if (TempColor >= mode_para_data[SNOW].ColorNum)
+				{
+					TempColor = 0;
+				}
+
+				TopR = mode_para_data[SNOW].Color[TempColor].BufR;
+				TopG = mode_para_data[SNOW].Color[TempColor].BufG;
+				TopB = mode_para_data[SNOW].Color[TempColor].BufB;
+				FadeR = TopR / FADE_LEVEL;
+				FadeG = TopG / FADE_LEVEL;
+				FadeB = TopB / FADE_LEVEL;
+			}break;
+	    }
+
+		Shift_Vertical_UpDown(&TempR, &TempG, &TempB);
+    }
+#else
 	bool  RandFlag = false;
 	uint16_t temp = 0;  
 	uint16_t temp2 = 0;
@@ -602,6 +766,7 @@ void Display_Tree_Snow(void)
       }
     }
   }
+ #endif
 }
 
 
@@ -932,14 +1097,18 @@ void Display_Tree_Fireworks(void)
       SpeedCtrl++;
       if (SpeedCtrl > PARA_SPEED_MAX - mode_para_data[FIREWORKS].Speed){
         SpeedCtrl = 0;
-        for (i = Layer[LayerStep].Head; i <= Layer[LayerStep].Tail; i++){
-          LedData[i].DutyR = mode_para_data[FIREWORKS].Color[TempColor].BufR;
-          LedData[i].DutyG = mode_para_data[FIREWORKS].Color[TempColor].BufG;
-          LedData[i].DutyB = mode_para_data[FIREWORKS].Color[TempColor].BufB;
+        for (i = 0; i < LED_TOTAL; i++)
+        {
+        	if (LayerStep == vertical_layer.info[i])
+        	{
+          		LedData[i].DutyR = mode_para_data[FIREWORKS].Color[TempColor].BufR;
+          		LedData[i].DutyG = mode_para_data[FIREWORKS].Color[TempColor].BufG;
+          		LedData[i].DutyB = mode_para_data[FIREWORKS].Color[TempColor].BufB;
+          	}
         }
 
         LayerStep++;
-        if (LayerStep >= LayerMax){
+        if (LayerStep >= vertical_layer.layer_total){
           TempStep++;
           FadeR = mode_para_data[FIREWORKS].Color[TempColor].BufR / FADE_LEVEL;
           FadeG = mode_para_data[FIREWORKS].Color[TempColor].BufG / FADE_LEVEL;
@@ -951,7 +1120,8 @@ void Display_Tree_Fireworks(void)
 
     //fade out to 1/2
     case 1:{
-      if (FadeLevel > FADE_LEVEL / 2){
+      if (FadeLevel > FADE_LEVEL / 2)
+      {
         FadeLevel--;
         for (i = 0; i < LED_TOTAL; i++){
           LedData[i].DutyR = FadeR * FadeLevel;
@@ -964,7 +1134,8 @@ void Display_Tree_Fireworks(void)
 
     //to maximum birght and all color 
     case 2:{
-      for (i = 0; i < LED_TOTAL; i++){
+      for (i = 0; i < LED_TOTAL; i++)
+      {
         j = i % mode_para_data[FIREWORKS].ColorNum;
         LedData[i].DutyR = mode_para_data[FIREWORKS].Color[j].BufR;
         LedData[i].DutyG = mode_para_data[FIREWORKS].Color[j].BufG;
@@ -1077,7 +1248,7 @@ void Display_Tree_Horizontal(void)
     if (ModeFirstFlag)
     {
 		ModeFirstFlag = false;
-		j = LayerMax;
+		j = vertical_layer.layer_total;
     }
     else
     {
@@ -1128,241 +1299,13 @@ void Display_Tree_Horizontal(void)
 	    }
 	    
 	    
-	    for (temp = 0; temp < LayerMax - 1; temp++){
-	      temp2 = Layer[temp + 1].Head;
-	      for (temp1 = Layer[temp].Head; temp1 <= Layer[temp].Tail; temp1++){
-	        LedData[temp1].DutyR = LedData[temp2].DutyR;
-	        LedData[temp1].DutyG = LedData[temp2].DutyG;
-	        LedData[temp1].DutyB = LedData[temp2].DutyB;
-	      }
-	    }
-	    
-	    temp = LayerMax - 1;
-	    for (temp1 = Layer[temp].Head; temp1 <= Layer[temp].Tail; temp1++){
-	      LedData[temp1].DutyR = TempR;
-	      LedData[temp1].DutyG = TempG;
-	      LedData[temp1].DutyB = TempB;
-	    }
+	    Shift_Vertical_UpDown(&TempR, &TempG, &TempB);
 	}
   }
 }
 
 void Display_Tree_Waves(void)
 {
-#if 0
-	uint16 i = 0, j = 0, k = 0;
-	uint16_t l = 0;
-	uint16_t m = 0;
-
-	if(display_data.init == true)
-	{	
-		display_data.init = false;
-
-
-		Para_Err_Check(&mode_para_data[WAVES]);
-
-		BrightLevel = 1;
-
-		SpeedCtrl 	= 0;
-		OtherCtrl 	= 0;
-		TempColor 	= 0;
-		TempStep  	= 0;
-		RptCtrl 	= 0;
-		TempColor 	= 0;
-
-		TopR = mode_para_data[WAVES].Color[TempColor].BufR;
-		TopG = mode_para_data[WAVES].Color[TempColor].BufG;
-		TopB = mode_para_data[WAVES].Color[TempColor].BufB;
-		TempR = 0;
-		TempG = 0;
-		TempB = 0;
-
-		if (TopR >= TopG && TopR >= TopB){
-			FadeR = 0;
-			FadeG = TopG / (mode_para_data[WAVES].Other + 1);
-			FadeB = TopB / (mode_para_data[WAVES].Other + 1);
-			TempR = TopR;
-		}
-		else if (TopG >= TopB && TopG >= TopR){
-			FadeG = 0;
-			FadeR = TopR / (mode_para_data[WAVES].Other + 1);
-			FadeB = TopB / (mode_para_data[WAVES].Other + 1);
-			TempG = TopG;
-		}
-		else if (TopB >= TopR && TopB >= TopG){
-			FadeB = 0;
-			FadeR = TopR / (mode_para_data[WAVES].Other + 1);
-			FadeG = TopG / (mode_para_data[WAVES].Other + 1);
-			TempB = TopB;
-		}
-		
-
-		Display_All_Set(0,0,0);
-
-		ModeFirstFlag = true;
-
-		return;
-	}
-  
-
-	SpeedCtrl++;
-	if (SpeedCtrl > (PARA_SPEED_MAX - mode_para_data[WAVES].Speed) * (uint8_t)(1 - ModeFirstFlag))
-	{
-		SpeedCtrl = 0;
-
-		if (ModeFirstFlag)
-		{
-			ModeFirstFlag = false;
-			m = LayerMax;
-		}
-		else
-		{
-			m = 1;
-		}
-
-		for (l = 0; l < m; l++)
-		{
-			switch (TempStep){
-				case 0:{
-					if (FadeR != 0){
-						if (TempR < TopR - FadeR){
-							TempR += FadeR;
-						}
-						else{
-							TempR = TopR;
-							TempStep++;
-						}
-					}
-					else	TempStep++;
-				}break;
-
-				case 1:{
-					if (FadeG != 0){
-						if (TempG < TopG - FadeG){
-							TempG += FadeG;
-						}
-						else{
-							TempG = TopG;
-							TempStep++;
-						}
-					}
-					else	TempStep++;
-				}break;
-
-				case 2:{
-					if (FadeB != 0){
-						if (TempB < TopB - FadeB){
-							TempB += FadeB;
-						}
-						else{
-							TempB = TopB;
-							TempStep++;
-						}
-					}
-					else	TempStep++;
-				}break;
-
-				case 3:{
-					if (FadeR == 0)		TempStep++;
-					else{
-						if (TempR > FadeR)		TempR -= FadeR;
-						else{
-							TempR = 0;
-							TempStep++;
-						}
-					}
-				} break;
-
-				case 4:{
-					if (FadeG == 0)		TempStep++;
-					else{
-						if (TempG > FadeG)		TempG -= FadeG;
-						else{
-							TempG = 0;
-							TempStep++;
-						}
-					}
-				}break;
-
-				case 5:{
-					if (FadeB == 0)	TempStep++;
-					else{
-						if (TempB > FadeB)		TempB -= FadeB;
-						else{
-							TempB = 0;
-							TempStep++;
-						}
-					}
-				}break;
-
-				case 6:{
-					FadeR = TempR / FADE_LEVEL;
-					FadeG = TempG / FADE_LEVEL;
-					FadeB = TempB / FADE_LEVEL;
-					TempStep++;
-				}break;
-
-				case 7:{
-					for (uint8_t m = 0; m <= (PARA_OTHER_MAX - mode_para_data[WAVES].Other + 2); m++){
-						if (TempR > 0 || TempG > 0 || TempB > 0){
-							TempR -= FadeR;
-							TempG -= FadeG;
-							TempB -= FadeB;
-						}
-						else	TempStep++;
-					}
-				}break;
-
-				default:{
-					TempColor++;
-					if (TempColor >= mode_para_data[WAVES].ColorNum)	TempColor = 0;
-					TopR = mode_para_data[WAVES].Color[TempColor].BufR;
-					TopG = mode_para_data[WAVES].Color[TempColor].BufG;
-					TopB = mode_para_data[WAVES].Color[TempColor].BufB;
-					TempR = 0;
-					TempG = 0;
-					TempB = 0;
-
-					if (TopR >= TopG && TopR >= TopB){
-						FadeR = 0;
-						FadeG = TopG / (mode_para_data[WAVES].Other + 1);
-						FadeB = TopB / (mode_para_data[WAVES].Other + 1);
-						TempR = TopR;
-					}
-					else if (TopG >= TopB && TopG >= TopR){
-						FadeG = 0;
-						FadeR = TopR / (mode_para_data[WAVES].Other + 1);
-						FadeB = TopB / (mode_para_data[WAVES].Other + 1);
-						TempG = TopG;
-					}
-					else if (TopB >= TopR && TopB >= TopG){
-						FadeB = 0;
-						FadeR = TopR / (mode_para_data[WAVES].Other + 1);
-						FadeG = TopG / (mode_para_data[WAVES].Other + 1);
-						TempB = TopB;
-					}
-					TempStep = 0;
-				}break;
-			}
-
-			for (i = 0; i < LayerMax - 1; i++){
-				k = Layer[i + 1].Head;
-				for (j = Layer[i].Head; j <= Layer[i].Tail; j++){
-					LedData[j].DutyR = LedData[k].DutyR;
-					LedData[j].DutyG = LedData[k].DutyG;
-					LedData[j].DutyB = LedData[k].DutyB;
-				}
-			}
-
-			i = LayerMax - 1;
-			for (j = Layer[i].Head; j <= Layer[i].Tail; j++){
-				LedData[j].DutyR = TempR;
-				LedData[j].DutyG = TempG;
-				LedData[j].DutyB = TempB;
-			}
-		}
-	}
-#else
 	uint16_t	i = 0;
 	uint16_t	j = 0;
 	uint16_t	k = 0;
@@ -1426,7 +1369,7 @@ void Display_Tree_Waves(void)
 		if (ModeFirstFlag)
 		{
 			ModeFirstFlag = false;
-			m = LayerMax;
+			m = vertical_layer.layer_total;
 		}
 		else
 		{
@@ -1488,26 +1431,9 @@ void Display_Tree_Waves(void)
 				} break;
 			}
 
-			for (i = 0; i < LayerMax - 1; i++)
-			{
-				k = Layer[i + 1].Head;
-				for (j = Layer[i].Head; j <= Layer[i].Tail; j++){
-					LedData[j].DutyR = LedData[k].DutyR;
-					LedData[j].DutyG = LedData[k].DutyG;
-					LedData[j].DutyB = LedData[k].DutyB;
-				}
-			}
-
-			i = LayerMax - 1;
-			for (j = Layer[i].Head; j <= Layer[i].Tail; j++){
-				LedData[j].DutyR = TempR;
-				LedData[j].DutyG = TempG;
-				LedData[j].DutyB = TempB;
-			}
+			Shift_Vertical_UpDown(&TempR, &TempG, &TempB);
 		}
 	}
-
-#endif
 }
 
 //if the layermax > FADE_LEVEL, this mode need to fixed
@@ -1553,15 +1479,18 @@ void Display_Tree_Updwn(void)
 	}
 
 	SpeedCtrl++;
-	if (SpeedCtrl >= 2){
+	if (SpeedCtrl >= 2)
+	{
 		SpeedCtrl = 0;
 
-		switch (TempStep){
-			case 0:{
+		switch (TempStep)
+		{
+			case 0:
+			{
 				LayerStep++;
-				if (LayerStep > LayerMax + FADE_LEVEL)	TempStep++;
+				if (LayerStep > vertical_layer.layer_total + FADE_LEVEL)	TempStep++;
 
-				for (i = 0; i < LayerMax; i++)
+				for (i = 0; i < vertical_layer.layer_total; i++)
 				{
 					if (LayerStep < FADE_LEVEL)
 					{
@@ -1581,7 +1510,7 @@ void Display_Tree_Updwn(void)
 						}
 
 						//from top to bottom
-						if ((LayerMax - 1 - i) > LayerStep)
+						if ((vertical_layer.layer_total - 1 - i) > LayerStep)
 						{
 							TempR1 = 0;
 							TempG1 = 0;
@@ -1589,7 +1518,7 @@ void Display_Tree_Updwn(void)
 						}
 						else
 						{
-							j = FADE_LEVEL - LayerStep + LayerMax - 1 - i;
+							j = FADE_LEVEL - LayerStep + vertical_layer.layer_total - 1 - i;
 							TempR1 = FadeR1 * j;
 							TempG1 = FadeG1 * j;
 							TempB1 = FadeB1 * j;
@@ -1597,7 +1526,7 @@ void Display_Tree_Updwn(void)
 					}
 					else{
 
-						if (LayerStep < LayerMax)
+						if (LayerStep < vertical_layer.layer_total)
 						{
 							//from bottom to top
 							if ((i < (LayerStep - FADE_LEVEL)) || (i > LayerStep)){
@@ -1613,13 +1542,13 @@ void Display_Tree_Updwn(void)
 							}
 
 							//from top to bottom
-							if (((LayerMax - 1 - i) < (LayerStep - FADE_LEVEL)) || (LayerMax - 1 - i > LayerStep)){
+							if (((vertical_layer.layer_total - 1 - i) < (LayerStep - FADE_LEVEL)) || (vertical_layer.layer_total - 1 - i > LayerStep)){
 								TempR1 = 0;
 								TempG1 = 0;
 								TempB1 = 0;
 							}
 							else{
-								j = LayerMax - 1 - i - (LayerStep - FADE_LEVEL);
+								j = vertical_layer.layer_total - 1 - i - (LayerStep - FADE_LEVEL);
 								TempR1 = FadeR1 * j;
 								TempG1 = FadeG1 * j;
 								TempB1 = FadeB1 * j;
@@ -1642,13 +1571,13 @@ void Display_Tree_Updwn(void)
 							}
 
 							//from top to bottom
-							if ((LayerMax - 1 - i) < (LayerStep - FADE_LEVEL)){
+							if ((vertical_layer.layer_total - 1 - i) < (LayerStep - FADE_LEVEL)){
 								TempR1 = 0;
 								TempG1 = 0;
 								TempB1 = 0;
 							}
 							else{
-								j = LayerMax - 1 - i - (LayerStep - FADE_LEVEL);
+								j = vertical_layer.layer_total - 1 - i - (LayerStep - FADE_LEVEL);
 								TempR1 = FadeR1 * j;
 								TempG1 = FadeG1 * j;
 								TempB1 = FadeB1 * j;
@@ -1659,13 +1588,33 @@ void Display_Tree_Updwn(void)
 					//get the layer color value
 					k = (uint16_t)TempR + (uint16_t)TempR1;
 					if (k > 255)	k = 255;
-					for (j = Layer[i].Head; j <= Layer[i].Tail; j++)	LedData[j].DutyR = (uint8_t)k;
+					for (j = 0; j < LED_TOTAL; j++)
+					{
+						if (vertical_layer.info[j] == i)
+						{
+							LedData[j].DutyR = (uint8_t)k;
+						}
+					}
+					
 					k = (uint16_t)TempG + (uint16_t)TempG1;
 					if (k > 255)	k = 255;
-					for (j = Layer[i].Head; j <= Layer[i].Tail; j++)	LedData[j].DutyG = (uint8_t)k;
+					for (j = 0; j < LED_TOTAL; j++)
+					{
+						if (vertical_layer.info[j] == i)
+						{
+							LedData[j].DutyG = (uint8_t)k;
+						}
+					}
+					
 					k = (uint16_t)TempB + (uint16_t)TempB1;
 					if (k > 255)	k = 255;
-					for (j = Layer[i].Head; j <= Layer[i].Tail; j++)	LedData[j].DutyB = (uint8_t)k;
+					for (j = 0; j < LED_TOTAL; j++)
+					{
+						if (vertical_layer.info[j] == i)
+						{
+							LedData[j].DutyB = (uint8_t)k;
+						}
+					}
 				}
 			}break;
 
@@ -1860,7 +1809,7 @@ void Display_Tree_Color_Rand(void)
     if (ModeFirstFlag)
     {
 		ModeFirstFlag = false;
-		m = LayerMax;
+		m = vertical_layer.layer_total;
     }
     else
     {
@@ -1878,35 +1827,7 @@ void Display_Tree_Color_Rand(void)
 	      default:       TempR = 0; TempG -= 8; TempB += 11;	break;
 	    }
 	    
-	    #if 1
-	    for (i = 0; i < LayerMax - 1; i++){
-	      j = Layer[i + 1].Head;
-	      for (k = Layer[i].Head; k <= Layer[i].Tail; k++){
-	        LedData[k].DutyR = LedData[j].DutyR;
-	        LedData[k].DutyG = LedData[j].DutyG;
-	        LedData[k].DutyB = LedData[j].DutyB;
-	      }
-	    }
-	    
-	    i = LayerMax - 1;
-	    for (k = Layer[i].Head; k <= Layer[i].Tail; k++){
-	      LedData[k].DutyR = TempR;
-	      LedData[k].DutyG = TempG;
-	      LedData[k].DutyB = TempB;
-	    }
-	    #else
-		for (i = LED_TOTAL - 1; i > 0; i--)
-		{
-			LedData[i].DutyR = LedData[i - 1].DutyR;
-			LedData[i].DutyG = LedData[i - 1].DutyG;
-			LedData[i].DutyB = LedData[i - 1].DutyB;
-		}
-
-		LedData[0].DutyR = TempR;
-		LedData[0].DutyG = TempG;
-		LedData[0].DutyB = TempB;
-
-	    #endif
+	    Shift_Vertical_UpDown(&TempR, &TempG, &TempB);
 	}
   }
 }
@@ -2137,5 +2058,50 @@ void Display_Tree_Alternate(void)
 }
 
 
+void Display_Custom_Steady(uint8_t sec)
+{
+	if (display_data.init)
+	{
+		display_data.init = false;
+		read_custom_steady_flash(sec, (uint8_t *)LedData);
+	}
+}
+
+
+void Display_Custom_Dynamic(void)
+{
+	static uint8_t	DynamicTimeStep;
+	static uint8_t	DynamicTime;
+	if (display_data.init)
+	{
+		display_data.init = false;
+		DynamicTimeStep = 0;
+		DynamicTime = 1;
+	}
+
+	DynamicTime++;
+	if (DynamicTime >= 2)
+	{
+		DynamicTime = 0;
+		if (DynamicTimeFlag[DynamicTimeStep] == true)
+		{
+			read_custom_dynamic_flash(DynamicTimeStep, (uint8_t *)LedData);
+		}
+		else
+		{
+			for (uint16_t i = 0; i < LED_TOTAL; i++)
+			{
+				LedData[i].DutyR = 0;
+				LedData[i].DutyG = 0;
+				LedData[i].DutyB = 0;
+			}
+		}
+		DynamicTimeStep++;
+		if (DynamicTimeStep >= DYNAMIC_MAX_TIME)
+		{
+			DynamicTimeStep = 0;
+		}
+	}
+}
 
 

@@ -86,13 +86,16 @@ void Music_Mode_Bar(void)
 		{
 			if (TempStep < LayerStep)
 			{
-				if (TempStep < LayerMax)
+				if (TempStep < vertical_layer.layer_total)
 				{
-					for (i = Layer[TempStep].Head; i <= Layer[TempStep].Tail; i++)
+					for (i = 0; i < LED_TOTAL; i++)
 					{
-						LedData[i].DutyR = Music_Color_Table[TempStep][0];
-						LedData[i].DutyG = Music_Color_Table[TempStep][1];
-						LedData[i].DutyB = Music_Color_Table[TempStep][2];
+						if (vertical_layer.info[i] == TempStep)
+						{
+							LedData[i].DutyR = Music_Color_Table[TempStep][0];
+							LedData[i].DutyG = Music_Color_Table[TempStep][1];
+							LedData[i].DutyB = Music_Color_Table[TempStep][2];
+						}
 					}
 					TempStep++;
 				}
@@ -109,11 +112,14 @@ void Music_Mode_Bar(void)
 		if (TempStep > 0)
 		{
 			TempStep--;
-			for (i = Layer[TempStep].Head; i <= Layer[TempStep].Tail; i++)
+			for (i = 0; i < LED_TOTAL; i++)
 			{
-				LedData[i].DutyR = 0;
-				LedData[i].DutyG = 0;
-				LedData[i].DutyB = 0;
+				if (vertical_layer.info[i] == TempStep)
+				{
+					LedData[i].DutyR = 0;
+					LedData[i].DutyG = 0;
+					LedData[i].DutyB = 0;
+				}
 			}
 		}
 		

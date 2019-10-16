@@ -99,6 +99,10 @@ void Ws2812_Show(void)
   
   for (a = 0;  a < LED_TOTAL; a++)
   {
+  	if (LedData[a].DutyR == 0xff)	LedData[a].DutyR = 0xf0;
+  	if (LedData[a].DutyG == 0xff)	LedData[a].DutyG = 0xf0;
+  	if (LedData[a].DutyB == 0xff)	LedData[a].DutyB = 0xf0;
+  	
     LedDrvData[a].DutyR = LedData[a].DutyR / BrightLevel;
     LedDrvData[a].DutyG = LedData[a].DutyG / BrightLevel;
     LedDrvData[a].DutyB = LedData[a].DutyB / BrightLevel;

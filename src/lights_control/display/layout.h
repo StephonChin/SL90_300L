@@ -10,32 +10,28 @@
 //include standard libraries
 #include <stdint.h>
 
+#define     LAYER_MAX             	50
+#define		STR_LAYER_MAX			20
+#define		STR_LAYER_SEC			15
+
 
 //typedef
-typedef struct LAYER_BRIEF
+typedef struct LAYER_INFO
 {
-	uint8_t	vertical_flag;
-	uint8_t vertical_total;
-	uint8_t triangle_flag;
-	uint8_t triangle_total;
-	uint8_t fan_flag;
-	uint8_t fan_total;
-	uint8_t reserved1;
-	uint8_t reserved2;
-}LayerBrief_T;
+	uint8_t		en_flag;
+	uint8_t 	layer_total;
+	uint16_t 	head[LAYER_MAX];
+	uint8_t		info[LED_TOTAL+1];
+}Layer_T;
 
-typedef struct 
-{
-	uint16_t	head;
-	uint16_t	tail;
-}LayerData_T;
+
+void Display_Layout_None_Init(void);
 
 
 //exported paramters
-extern LayerBrief_T		layer_brief;
-extern LayerData_T		vertical_layer[];
-extern LayerData_T		triangle_layer[];
-extern LayerData_T		fan_layer[];
+extern Layer_T		vertical_layer;
+extern Layer_T		triangle_layer;
+extern Layer_T		fan_layer;
 
 
 #endif

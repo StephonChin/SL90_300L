@@ -8,11 +8,9 @@
 #include "layout.h"
 
 //gloable paramters
-LayerBrief_T		layer_brief;
-LayerData_T			vertical_layer[50];
-LayerData_T			triangle_layer[50];
-LayerData_T			fan_layer[50];
-
+Layer_T			vertical_layer;
+Layer_T			triangle_layer;
+Layer_T			fan_layer;
 
 
 /*
@@ -21,6 +19,8 @@ LayerData_T			fan_layer[50];
  */
 void Display_Layout_Enter(void)
 {
+
+	#if 0
 	uint16_t i = 0;
 
 	if (display_data.init == true)
@@ -42,6 +42,7 @@ void Display_Layout_Enter(void)
 			LayerTemp[i].Tail = 0xffff;
 		}
 	}
+	#endif
 }
 
 
@@ -51,6 +52,7 @@ void Display_Layout_Enter(void)
  */
 void Display_Layout_Cancel(void)
 {
+#if 0
 	if (display_data.init == true)
 	{
 		display_data.init = false;
@@ -58,6 +60,7 @@ void Display_Layout_Cancel(void)
 		display_data.mode= display_data.mode_buf;
 		display_data.init = true;
 	}
+#endif
 }
 
 
@@ -67,6 +70,7 @@ void Display_Layout_Cancel(void)
  */
 void Display_Layout_Test(void)
 {
+#if 0
 	uint16_t i = 0;
 	uint16_t j = 0;
 	
@@ -88,9 +92,6 @@ void Display_Layout_Test(void)
 			LayerTemp[LayerTest+1].Head = LayerTemp[LayerTest].Tail + 1;
 			LayerTemp[LayerTest+1].Tail = LED_TOTAL - 1;
 		}
-
-		printf("=layout=head:0x%x",LayerTemp[LayerTest].Head);
-		printf("=layout=tail:0x%x",LayerTemp[LayerTest].Tail);
 
 		//change the layer color
 		j = (uint16_t)(LayerTest % 3);
@@ -124,6 +125,7 @@ void Display_Layout_Test(void)
 			}
 		}
 	}
+#endif
 }
 
 
@@ -133,6 +135,7 @@ void Display_Layout_Test(void)
  */
 void Display_Layout_Save(void)
 {
+#if 0
 	uint16_t i = 0;
 	
 	if (display_data.init == true)
@@ -150,6 +153,7 @@ void Display_Layout_Save(void)
 		display_data.mode= GREEN_FLASH;
 		display_data.init = true;
 	}
+#endif
 }
 
 
@@ -164,95 +168,23 @@ void Display_Layout_Photo_Ctrl(void)
   */
 void Display_Layout_None_Init(void)
 {
+	vertical_layer.en_flag = false;
+	vertical_layer.layer_total = STR_LAYER_MAX;
+
+	
 	for (uint16_t i = 0; i < STR_LAYER_MAX; i++)
 	{
-		Layer[i].Head = i * STR_LAYER_SEC;
-		Layer[i].Tail = (i+1) * STR_LAYER_SEC - 1;
+		vertical_layer.head[i] = i * STR_LAYER_SEC;
 	}
 
-	Layer[STR_LAYER_MAX - 1].Tail = LED_TOTAL - 1;
 
-	LayerMax = STR_LAYER_MAX;
-
-	#if 0
-	LayerMax = 18;
-
-	Layer[0].Head = 0;
-	Layer[0].Tail = 34;
-
-	Layer[1].Head = 35;
-	Layer[1].Tail = 57;
-
-	Layer[2].Head = 58;
-	Layer[2].Tail = 88;
-
-	Layer[3].Head = 89;
-	Layer[3].Tail = 117;
-
-	Layer[4].Head = 118;
-	Layer[4].Tail = 144;
-
-	Layer[5].Head = 145;
-	Layer[5].Tail = 166;
-
-	Layer[6].Head = 167;
-	Layer[6].Tail = 183;
-
-	Layer[7].Head = 184;
-	Layer[7].Tail = 198;
-
-	Layer[8].Head = 199;
-	Layer[8].Tail = 213;
-
-	Layer[9].Head = 214;
-	Layer[9].Tail = 226;
-
-	Layer[10].Head = 227;
-	Layer[10].Tail = 239;
-
-	Layer[11].Head = 240;
-	Layer[11].Tail = 252;
-
-	Layer[12].Head = 253;
-	Layer[12].Tail = 263;
-
-	Layer[13].Head = 264;
-	Layer[13].Tail = 274;
-
-	Layer[14].Head = 275;
-	Layer[14].Tail = 285;
-
-	Layer[15].Head = 286;
-	Layer[15].Tail = 294;
-
-	Layer[16].Head = 295;
-	Layer[16].Tail = 299;
-
-	Layer[17].Head = 300;
-	Layer[17].Tail = 300;
-	#endif
+	for (uint16_t i = 0; i < LED_TOTAL; i++)
+	{
+		uint8_t layer = i / STR_LAYER_SEC;
+		if (layer >= STR_LAYER_MAX)	layer = STR_LAYER_MAX - 1;
+		vertical_layer.info[i] = layer;
+	}
 }
 
-
-
-
-
-
-/**
-  * FunctionName  Display_Layout_Triangle_Left
-  */
-void Display_Layout_Triangle_Left(void)
-{
-
-}
-
-
-/**
-  * FunctionName  Display_Layout_Triangle_Right
-  */
-void Display_Layout_Triangle_Right(void)
-{
-
-}
 
 

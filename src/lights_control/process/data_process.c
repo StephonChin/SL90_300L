@@ -118,9 +118,9 @@ void User_Data_Init(void)
 	read_user_normal_flash();
 	
 	//Yes - Confirm if it is the first time to write the user normal flash? 
-	if (flash_first_number != 0xaa555555)
+	if (flash_first_number != 0x55aa5555)
 	{
-		flash_first_number = 0xaa555555;
+		flash_first_number = 0x55aa5555;
 		
 		display_data.mode_buf 	= STEADY;
 		display_data.mode 		= display_data.mode_buf;
@@ -139,12 +139,9 @@ void User_Data_Init(void)
 		music_data.enable_flag 	= false;
 		music_data.mode 		= 0;
 
-		layer_brief.vertical_flag 	= 0;
-		layer_brief.vertical_total 	= 0;
-		layer_brief.triangle_flag 	= 0;
-		layer_brief.triangle_total 	= 0;
-		layer_brief.fan_flag		= 0;
-		layer_brief.fan_total 		= 0;
+		vertical_layer.en_flag = false;
+		triangle_layer.en_flag = false;
+		fan_layer.en_flag = false;
 		Display_Layout_None_Init();
 
 
@@ -233,7 +230,9 @@ void User_Data_Init(void)
 	//No - Confirm if it is the first time to write the user normal flash? 
 	else
 	{
-		if (display_data.mode_buf > CURRENT_MODE_MAX)
+		if (display_data.mode_buf > CURRENT_MODE_MAX && display_data.mode_buf != CUSTOM_STEADY_1 
+		&& display_data.mode_buf != CUSTOM_STEADY_2 && display_data.mode_buf != CUSTOM_STEADY_3
+		&& display_data.mode_buf != CUSTOM_DYNAMIC_1)
 		{
 			display_data.mode_buf = STEADY;
 			enable_user_normal_flash_write();
@@ -268,77 +267,131 @@ void User_Data_Init(void)
 		if (music_data.mode > 1)			music_data.mode = 0;
 
 		//vertical layer information
-		if (layer_brief.vertical_flag == 0 || layer_brief.vertical_total == 0 || layer_brief.vertical_total > LAYER_MAX)
+		if (vertical_layer.en_flag == false)
 		{
 			Display_Layout_None_Init();
 		}
 		else
 		{
 			uint8_t err_flag = false;
-			for (uint8_t i = 0; i < LAYER_MAX; i++)
+
+			if (vertical_layer.layer_total >= LAYER_MAX)
 			{
-				if (vertical_layer[i].tail >= LED_TOTAL || vertical_layer[i].head >= LED_TOTAL)
+				err_flag = true;
+			}
+
+			if (!err_flag)
+			{
+				for (uint8_t i = 0; i < LAYER_MAX; i++)
 				{
-					err_flag = true;
-					break;
+					if (vertical_layer.head[i] >= LED_TOTAL)
+					{
+						err_flag = true;
+						break;
+					}
+				}
+			}
+
+			if (!err_flag)
+			{
+				for (uint8_t i = 0; i < LED_TOTAL; i++)
+				{
+					if (vertical_layer.info[i] >= LAYER_MAX)
+					{
+						err_flag = true;
+						break;
+					}
 				}
 			}
 
 			//if the layer information is wrong.
 			if (err_flag)
 			{
-				layer_brief.vertical_flag = 0;
-				Display_Layout_None_Init();
+				vertical_layer.en_flag = false;
 				enable_user_normal_flash_write();
 			}
 		}
 
 		//triangle layer information
-		if (layer_brief.triangle_flag == 0 || layer_brief.triangle_total == 0 || layer_brief.triangle_total > LAYER_MAX)
-		{
-			
-		}
-		else
+		if (triangle_layer.en_flag)
 		{
 			uint8_t err_flag = false;
-			for (uint8_t i = 0; i < LAYER_MAX; i++)
+
+			if (triangle_layer.layer_total >= LAYER_MAX)
 			{
-				if (triangle_layer[i].tail >= LED_TOTAL || triangle_layer[i].head >= LED_TOTAL)
+				err_flag = true;
+			}
+
+			if (!err_flag)
+			{
+				for (uint8_t i = 0; i < LAYER_MAX; i++)
 				{
-					err_flag = true;
-					break;
+					if (triangle_layer.head[i] >= LED_TOTAL)
+					{
+						err_flag = true;
+						break;
+					}
+				}
+			}
+
+			if (!err_flag)
+			{
+				for (uint8_t i = 0; i < LED_TOTAL; i++)
+				{
+					if (triangle_layer.info[i] >= LAYER_MAX)
+					{
+						err_flag = true;
+						break;
+					}
 				}
 			}
 
 			//if the layer information is wrong.
 			if (err_flag)
 			{
-				layer_brief.triangle_flag = 0;
+				triangle_layer.en_flag = false;
 				enable_user_normal_flash_write();
 			}
 		}
 
 		//fan layer information
-		if (layer_brief.fan_flag == 0 || layer_brief.fan_total == 0 || layer_brief.fan_total > LAYER_MAX)
-		{
-			
-		}
-		else
+		if (fan_layer.en_flag)
 		{
 			uint8_t err_flag = false;
-			for (uint8_t i = 0; i < LAYER_MAX; i++)
+
+			if (fan_layer.layer_total >= LAYER_MAX)
 			{
-				if (fan_layer[i].tail >= LED_TOTAL || fan_layer[i].head >= LED_TOTAL)
+				err_flag = true;
+			}
+
+			if (!err_flag)
+			{
+				for (uint8_t i = 0; i < LAYER_MAX; i++)
 				{
-					err_flag = true;
-					break;
+					if (fan_layer.head[i] >= LED_TOTAL)
+					{
+						err_flag = true;
+						break;
+					}
+				}
+			}
+
+			if (!err_flag)
+			{
+				for (uint8_t i = 0; i < LED_TOTAL; i++)
+				{
+					if (fan_layer.info[i] >= LAYER_MAX)
+					{
+						err_flag = true;
+						break;
+					}
 				}
 			}
 
 			//if the layer information is wrong.
 			if (err_flag)
 			{
-				layer_brief.fan_flag = 0;
+				fan_layer.en_flag = false;
 				enable_user_normal_flash_write();
 			}
 		}
@@ -373,6 +426,9 @@ void User_Data_Init(void)
 				mode_para_data[i].Reserve1 	= 0;
 				for (uint8_t j = 0; j <= PARA_COLORNUM_MAX; j++)
 		    	{
+			    	mode_para_data[i].RcvColor[j].BufR = 0;
+					mode_para_data[i].RcvColor[j].BufG = 0;
+					mode_para_data[i].RcvColor[j].BufB = 0;
 					mode_para_data[i].Color[j].BufR = 0;
 					mode_para_data[i].Color[j].BufG = 0;
 					mode_para_data[i].Color[j].BufB = 0;
@@ -741,7 +797,7 @@ void Mcu_com_process(void)
 					MusicUpdateFlag = true;
 
 					LayerStep = (mcu_rcv_pack.cmd - 0x10);
-					if (LayerStep > LayerMax)	LayerStep = LayerMax;
+					if (LayerStep > vertical_layer.layer_total)	LayerStep = vertical_layer.layer_total;
 				}
 			}
 			len_pre = 0;
@@ -923,8 +979,6 @@ void App_data_prcoess(void)
 
 					if (reply_status == 0)	break;
 
-					printf("start - 0\n");
-
 					*reply_status++ = display_data.mode;
 					*reply_status++ = display_data.mode_buf;
 					for (uint8_t i = 0; i < 2; i++)
@@ -932,39 +986,33 @@ void App_data_prcoess(void)
 						*reply_status++ = 0;		//reserved
 					}
 
-					printf("start - 1\n");
 					uint8_t *src = (uint8_t *)&timing_data.cntdwn_hour;
 					for (uint8_t i = 0; i < 24; i++)
 					{
 						*reply_status++ = *src++;
 					}
 
-			        printf("start - 2\n");
 					src = (uint8_t *)&music_data.enable_flag;
 					for (uint8_t i = 0; i < 8; i++)
 					{
 						*reply_status++ = *src++;
 					}
 
-					printf("start - 3\n");
-					src = (uint8_t *)&layer_brief.vertical_flag;
+					*reply_status++ = vertical_layer.en_flag;
+					*reply_status++ = vertical_layer.layer_total;
+					*reply_status++ = triangle_layer.en_flag;
+					*reply_status++ = triangle_layer.layer_total;
+					*reply_status++ = fan_layer.en_flag;
+					*reply_status++ = fan_layer.layer_total;
+					*reply_status++ = 0;
+					*reply_status++ = 0;
 
-					for (uint8_t i = 0; i < 8; i++)
-					{
-						*reply_status++ = *src++;
-					}
-
-					printf("start - 4\n");
 					for(uint8_t i = 0; i <= CURRENT_MODE_MAX; i++)
 					{
 						*reply_status++ = mode_para_data[i].Chksum;
 					}
 
-					printf("start - 5\n");
-
 					res_to_app(ALL_STATUS_ACK, (const uint8_t *)reply_status_base, size);
-
-					printf("start - 6\n");
 
 					mfree(reply_status_base);
 					reply_status = 0;
@@ -1089,10 +1137,10 @@ void App_data_prcoess(void)
 					uint8_t   	speed = app_pack.payload[1];  //
 					uint8_t		bright = app_pack.payload[2];
 					uint8_t		other = app_pack.payload[3];
-					if (i > MODE_MAX && i != MUSIC_MODE)     break;    //overflow
-					if (speed > PARA_SPEED_MAX)                 break;    //overflow
-					if (bright > PARA_BRIGHT_MAX)				break;
-					if (other > PARA_OTHER_MAX)					break;
+					if (i > MODE_MAX && i != MUSIC_MODE)    break;    //overflow
+					if (speed > PARA_SPEED_MAX)             break;    //overflow
+					if (bright > PARA_BRIGHT_MAX)			break;
+					if (other > PARA_OTHER_MAX)				break;
 
 					mode_change_flag = true;
 					mode_change_time = 0;
@@ -1241,6 +1289,8 @@ void App_data_prcoess(void)
 
 				case LAYOUT_TEST_CMD:
 				{
+
+					#if 0
 					uint8_t reply = 0;
 					
 					if (app_pack.len == 5)
@@ -1271,10 +1321,12 @@ void App_data_prcoess(void)
 					}
 
 					res_to_app(LAYOUT_TEST_ACK, (const uint8_t *)&reply, 1);
+					#endif
 				}break;
 
 				case LAYOUT_SAVE_CMD:
 				{
+					#if 0
 					uint8_t reply = 0;
 					
 					if (app_pack.len == 4)
@@ -1321,7 +1373,243 @@ void App_data_prcoess(void)
 					}
 
 					res_to_app(LAYOUT_SAVE_ACK, (const uint8_t *)&reply, 1);
+					#endif
 				}break;
+
+
+				case LAYOUT_INFO_CMD:
+				{
+					uint16_t len = app_pack.len;
+					if (len == 303)
+					{
+						Layer_T *dst = 0;
+						switch (app_pack.payload[0])
+						{
+							//vertical
+							case 0:
+							{
+								dst = &vertical_layer;
+							}break;
+
+							//triangle
+							case 1:
+							{
+								dst = &triangle_layer;
+							}break;
+
+							//fan
+							case 3:
+							{
+								dst = &fan_layer;
+							}break;
+
+							default:
+							{
+
+							}break;
+						}
+
+						uint8_t total = app_pack.payload[1];
+						if (total < LAYER_MAX)
+						{
+							dst->en_flag = true;
+							dst->layer_total = total;
+
+
+							for (uint8_t i = 0; i < LED_TOTAL; i++)
+							{
+								dst->info[i] = app_pack.payload[i+2];
+							}
+
+							for (uint8_t i = 0; i < total; i++)
+							{
+								dst->head[i] = 0xffff;
+								for (uint8_t j = 0; j < LED_TOTAL; j++)
+								{
+									if (dst->head[i] == 0xffff && dst->info[j] == i)
+									{
+										dst->head[i] = j;
+										break;
+									}
+								}
+							}
+
+							enable_user_normal_flash_write();
+
+							uint8_t *src = &app_pack.payload[0];
+							res_to_app(LAYOUT_INFOR_ACK, (const uint8_t *)src, 2);
+						}
+						//the layer total is wrong
+						else
+						{
+							
+						}
+					}
+					//The data length is wrong
+					else
+					{
+			
+					}
+				}break;
+
+
+				case LAYOUT_CUSTOM_STEADY_CMD:
+				{
+					switch (app_pack.payload[0])
+					{
+						case 0:
+						{
+							if (app_pack.len == 2)
+							{
+								display_data.init = true;
+								if (app_pack.payload[1] == 0)			display_data.mode_buf = CUSTOM_STEADY_1;
+								else if (app_pack.payload[1] == 1)		display_data.mode_buf = CUSTOM_STEADY_2;
+								else if (app_pack.payload[1] == 2)		display_data.mode_buf = CUSTOM_STEADY_3;
+								else 									display_data.init = false;	
+
+								if (display_data.init)		
+								{
+									enable_user_normal_flash_write();
+
+									uint8_t *src = &app_pack.payload[0];
+									res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
+								}
+							}
+						}break;
+
+						case 1:
+						{
+							display_data.mode = LAYOUT_PHOTO_CTRL;
+							if (app_pack.len == 906)
+							{
+								for (uint16_t i = 0; i < LED_TOTAL; i++)
+								{
+									uint16_t j = i * 3 + 3;
+									LedData[i].DutyR = GAMMA_TABLE[app_pack.payload[j]];
+									LedData[i].DutyG = GAMMA_TABLE[app_pack.payload[j+1]];
+									LedData[i].DutyB = GAMMA_TABLE[app_pack.payload[j+2]];
+								}
+								uint8_t *src = &app_pack.payload[0];
+								res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 3);
+							}
+						}break;
+
+						case 2:
+						{
+							display_data.mode = display_data.mode_buf;
+							display_data.init = true;
+							uint8_t *src = &app_pack.payload[0];
+								res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
+						}break;
+
+						case 3:
+						{
+							if (app_pack.len == 2)
+							{
+								display_data.init = true;
+								if (app_pack.payload[1] == 0)			display_data.mode_buf = CUSTOM_STEADY_1;
+								else if (app_pack.payload[1] == 1)		display_data.mode_buf = CUSTOM_STEADY_2;
+								else if (app_pack.payload[1] == 2)		display_data.mode_buf = CUSTOM_STEADY_3;
+								else 									display_data.init = false;	
+
+								if (display_data.init)
+								{
+									write_custom_steady_flash(app_pack.payload[1], (uint8_t *)LedData);
+									uint8_t *src = &app_pack.payload[0];
+									res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
+								}
+							}
+						}break;
+					}
+				}break;
+
+				case LAYOUT_CUSTOM_DYNAMIC_CMD:
+				{
+					switch (app_pack.payload[0])
+					{
+						case 0:
+						{
+							if (app_pack.len == 2)
+							{
+								display_data.init = true;
+								if (app_pack.payload[1] == 0)			display_data.mode_buf = CUSTOM_DYNAMIC_1;
+								else 									display_data.init = false;	
+
+								if (display_data.init)		
+								{
+									enable_user_normal_flash_write();
+
+									uint8_t *src = &app_pack.payload[0];
+									res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
+								}
+							}
+						}break;
+
+						case 1:
+						{
+							
+							if (app_pack.len == 906)
+							{
+								uint8_t time = app_pack.payload[2];
+								if (display_data.mode != CUSTOM_DYNAMIC_1)
+								{
+									display_data.mode = CUSTOM_DYNAMIC_1;
+								}
+
+								if (time == 0)
+								{
+									for (uint8_t i = 0; i < DYNAMIC_MAX_TIME; i++)
+									{
+										DynamicTimeFlag[i] = 0;
+									}
+								}
+
+								DynamicTimeFlag[time] = true;
+
+								for (uint16_t i = 0; i < LED_TOTAL; i++)
+								{
+									uint16_t j = i * 3 + 3;
+									LedData[i].DutyR = GAMMA_TABLE[app_pack.payload[j]];
+									LedData[i].DutyG = GAMMA_TABLE[app_pack.payload[j+1]];
+									LedData[i].DutyB = GAMMA_TABLE[app_pack.payload[j+2]];
+								}
+
+
+								write_custom_dynamic_flash(time, (uint8_t *)LedData);
+								uint8_t *src = &app_pack.payload[0];
+								res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 3);
+							}
+						}break;
+
+						case 2:
+						{
+							display_data.mode = display_data.mode_buf;
+							display_data.init = true;
+							uint8_t *src = &app_pack.payload[0];
+							res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
+						}break;
+
+						case 3:
+						{
+							if (app_pack.len == 2)
+							{
+								display_data.init = true;
+								if (app_pack.payload[1] == 0)			display_data.mode_buf = CUSTOM_DYNAMIC_1;
+								else 									display_data.init = false;	
+
+								if (display_data.init)
+								{
+									enable_user_normal_flash_write();
+									uint8_t *src = &app_pack.payload[0];
+									res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
+								}
+							}
+						}break;
+					}
+				}break;
+
+
+				
 
 				case LAYOUT_SEC_CTRL:
 				{

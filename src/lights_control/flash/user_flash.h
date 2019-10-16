@@ -13,16 +13,21 @@
 #define	NORMAL_FLASH_MODE_VALUE_OFFSET			4
 #define	NORMAL_FLASH_TIMING_DATA_OFFSET			8
 #define NORMAL_FLASH_MUSIC_INFORMATION_OFFSET	32
-#define	NORMAL_FLASH_ALL_LAYER_BRIEF_OFFSET		40
-#define	NORMAL_FLASH_VERTICAL_LAYER_OFFSET		48
-#define	NORMAL_FLASH_TRIANGLE_LAYER_OFFSET		248
-#define NORMAL_FLASH_FAN_LAYER_OFFSET			448
-#define	NORMAL_FLASH_MODE_INFORMATION_OFFSET	648
+#define	NORMAL_FLASH_VERTICAL_LAYER_OFFSET		40
+#define	NORMAL_FLASH_TRIANGLE_LAYER_OFFSET		444
+#define NORMAL_FLASH_FAN_LAYER_OFFSET			848
+#define	NORMAL_FLASH_DYNAMIC_TIME_FLAG			1252
+#define	NORMAL_FLASH_RESERVED					1452
+#define	NORMAL_FLASH_MODE_INFORMATION_OFFSET	1468
 
 
-void user_flash_init(void);
 void read_user_normal_flash(void);
 void write_user_normal_flash(void);
+
+void read_custom_steady_flash(uint8_t sec, uint8_t *dst);
+uint8_t write_custom_steady_flash(uint8_t sec, uint8_t *src);
+
+
 
 
 
