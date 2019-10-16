@@ -186,6 +186,7 @@ extern ModePara_t   mode_para_data[];
 extern uint8_t 		MusicMode;
 extern bool			MusicUpdateFlag;
 extern uint8_t		DynamicTimeFlag[];
+extern uint8_t 		CustomEnableFlag[];
 
 
 

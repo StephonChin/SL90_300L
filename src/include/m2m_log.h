@@ -49,6 +49,7 @@
 
 /** config ************************/
 //#define LOG_VERBOSE
+#define NOPRINTF
 /** config end***************************/
 static const char *s_debug[] = {
         "[ ALL ]",
@@ -96,6 +97,9 @@ void current_time_printf();
                 m2m_printf("%s: %s func:%s LINE: %d: " format,s_debug[level],__FILENAME__,__func__, __LINE__, ##__VA_ARGS__); \
                 }}while(0)
 #endif  //CONF_LOG_TIME
+#elif defined(NOPRINTF)
+#define m2m_debug_level(level, format,...) 
+#define m2m_debug_level_noend(level, format,...) 
 #else
 #define m2m_debug_level(level, format,...) do{ if( level >= g_log_level ){ \
             m2m_printf("%s:" format "\r\n",s_debug[level], ##__VA_ARGS__); \

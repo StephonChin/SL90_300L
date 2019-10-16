@@ -14,6 +14,7 @@ ModePara_t  mode_para_data[MODE_MAX + 1];
 uint8_t 	MusicMode;
 bool		MusicUpdateFlag;
 uint8_t		DynamicTimeFlag[DYNAMIC_MAX_TIME];
+uint8_t 	CustomEnableFlag[4];
 
 
 

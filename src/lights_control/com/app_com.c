@@ -22,16 +22,11 @@ int app_cmd_handler(uint8_t *pdata, int rcv_len, M2M_packet_T **pp_ack_data)
 {
     uint8_t *p = pdata;
     int ret = 0;
-    
-	//m2m_printf(" 01 len %d  p = %p\n", rcv_len, pdata);
-
-	//printf("=====WARN==== app_cmd_handler enter!!!");
 	
     //check the update of received data
     if(pdata && rcv_len && (rcv_len < APP_PACK_SIZE_MAX)){
         uint8_t *dst = (uint8_t *)&app_pack;
 
-		//printf("=====WARN==== memcpy!!!");
 		memcpy(dst, p, rcv_len);
     }
 
@@ -60,8 +55,6 @@ int app_cmd_handler(uint8_t *pdata, int rcv_len, M2M_packet_T **pp_ack_data)
         }
 
         
-		
-        //printf("\n== ACK == ");
         #if 0
         uint8_t x = p_ack->len;
         uint8_t *p = (uint8_t *)&app_ack_pack;

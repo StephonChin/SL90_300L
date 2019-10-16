@@ -63,7 +63,7 @@ void board_fact_setup(void){
 		pinMode(TEST_IO,OUTPUT);
     digitalWrite(TEST_IO,HIGH);
 		Serial.begin(9600);
-		Serial.printf("Test Mode!\n");
+		//Serial.printf("Test Mode!\n");
 		WiFi.begin(TEST_SSID,TEST_PWD);
 		 while (WiFi.status() != WL_CONNECTED)
 		{
@@ -83,14 +83,14 @@ int test_connect_router(void)
 		WiFi.mode(WIFI_STA);
 	}
 	WiFi.mode(WIFI_STA);
-  printf("connect ssid:%s,pwd:%s\n",TEST_ROUTER_SSID,TEST_ROUTER_PWD);
+  //printf("connect ssid:%s,pwd:%s\n",TEST_ROUTER_SSID,TEST_ROUTER_PWD);
 	WiFi.begin(TEST_ROUTER_SSID,TEST_ROUTER_PWD);
   while (WiFi.status() != WL_CONNECTED)
 	{
 		delay(100);
 	}
 	local_ip_save();
-	printf("connect success!\n");
+	//printf("connect success!\n");
   pinMode(TEST_IO,OUTPUT);
   digitalWrite(TEST_IO,LOW);
   return 0;

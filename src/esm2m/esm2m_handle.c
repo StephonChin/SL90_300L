@@ -151,7 +151,7 @@ void dev_callback(int code, M2M_packet_T **pp_ack_data,void *p_r,void *p_arg){
 				 local_ip_save();
                  mcpy( (u8*)p_ack->p_data, (u8*)device_id.id, sizeof(M2M_id_T) );
                  mcpy( (u8*)&p_ack->p_data[sizeof(M2M_id_T)], (u8*)getlocal_ip(),  strlen(getlocal_ip()));
-                 m2m_log_debug("local ip %s\n", getlocal_ip());
+                 //m2m_log_debug("local ip %s\n", getlocal_ip());
 
                  //m2m_bytes_dump("local ip dump : ", (u8*)getlocal_ip(),  strlen(getlocal_ip()) );
                  m2m_log_debug("server receive code = %d\n", code );

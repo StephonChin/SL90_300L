@@ -118,9 +118,9 @@ void User_Data_Init(void)
 	read_user_normal_flash();
 	
 	//Yes - Confirm if it is the first time to write the user normal flash? 
-	if (flash_first_number != 0x55aa5555)
+	if (flash_first_number != 0x55aaaa55)
 	{
-		flash_first_number = 0x55aa5555;
+		flash_first_number = 0x55aaaa55;
 		
 		display_data.mode_buf 	= STEADY;
 		display_data.mode 		= display_data.mode_buf;
@@ -143,6 +143,11 @@ void User_Data_Init(void)
 		triangle_layer.en_flag = false;
 		fan_layer.en_flag = false;
 		Display_Layout_None_Init();
+
+		for (uint8_t i = 0; i < 4; i++)
+		{
+			CustomEnableFlag[i] = false;
+		}
 
 
 		for (uint8_t i = 0; i < MODE_MAX; i++)
@@ -1455,6 +1460,7 @@ void App_data_prcoess(void)
 
 				case LAYOUT_CUSTOM_STEADY_CMD:
 				{
+					//printf("Enter steady custom mode!!\n");
 					switch (app_pack.payload[0])
 					{
 						case 0:
@@ -1462,13 +1468,16 @@ void App_data_prcoess(void)
 							if (app_pack.len == 2)
 							{
 								display_data.init = true;
-								if (app_pack.payload[1] == 0)			display_data.mode_buf = CUSTOM_STEADY_1;
-								else if (app_pack.payload[1] == 1)		display_data.mode_buf = CUSTOM_STEADY_2;
-								else if (app_pack.payload[1] == 2)		display_data.mode_buf = CUSTOM_STEADY_3;
+								if (app_pack.payload[1] == 0 && CustomEnableFlag[0] == true)			display_data.mode_buf = CUSTOM_STEADY_1;
+								else if (app_pack.payload[1] == 1 && CustomEnableFlag[1] == true)		display_data.mode_buf = CUSTOM_STEADY_2;
+								else if (app_pack.payload[1] == 2 && CustomEnableFlag[2] == true)		display_data.mode_buf = CUSTOM_STEADY_3;
 								else 									display_data.init = false;	
+
+								
 
 								if (display_data.init)		
 								{
+									display_data.mode = display_data.mode_buf;
 									enable_user_normal_flash_write();
 
 									uint8_t *src = &app_pack.payload[0];
@@ -1499,7 +1508,7 @@ void App_data_prcoess(void)
 							display_data.mode = display_data.mode_buf;
 							display_data.init = true;
 							uint8_t *src = &app_pack.payload[0];
-								res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
+							res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
 						}break;
 
 						case 3:
@@ -1507,14 +1516,98 @@ void App_data_prcoess(void)
 							if (app_pack.len == 2)
 							{
 								display_data.init = true;
-								if (app_pack.payload[1] == 0)			display_data.mode_buf = CUSTOM_STEADY_1;
-								else if (app_pack.payload[1] == 1)		display_data.mode_buf = CUSTOM_STEADY_2;
-								else if (app_pack.payload[1] == 2)		display_data.mode_buf = CUSTOM_STEADY_3;
-								else 									display_data.init = false;	
+								if (app_pack.payload[1] == 0 )			
+								{
+									display_data.mode_buf = CUSTOM_STEADY_1;
+									CustomEnableFlag[0] = true;
+								}
+								else if (app_pack.payload[1] == 1)		
+								{
+									display_data.mode_buf = CUSTOM_STEADY_2;
+									CustomEnableFlag[1] = true;
+								}
+								else if (app_pack.payload[1] == 2)		
+								{
+									display_data.mode_buf = CUSTOM_STEADY_3;
+									CustomEnableFlag[2] = true;
+								}
+								else 									
+								{
+									display_data.init = false;	
+								}
 
 								if (display_data.init)
 								{
+									display_data.mode = display_data.mode_buf;
 									write_custom_steady_flash(app_pack.payload[1], (uint8_t *)LedData);
+									uint8_t *src = &app_pack.payload[0];
+									res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
+									enable_user_normal_flash_write();
+								}
+							}
+						}break;
+
+						case 4:
+						{
+							if (app_pack.len == 2)
+							{
+								if (app_pack.payload[1] == 0 && CustomEnableFlag[0] == true)
+								{
+									CustomEnableFlag[0] = false;
+
+									enable_user_normal_flash_write();
+									if (display_data.mode == CUSTOM_STEADY_1 || display_data.mode == LAYOUT_PHOTO_CTRL)
+									{
+										display_data.mode = STEADY;
+										display_data.init = true;
+										//printf("222\n");
+									}
+
+									if (display_data.mode_buf == CUSTOM_STEADY_1)
+									{
+										display_data.mode_buf = STEADY;
+										//printf("333\n");
+									}
+								}
+								else if (app_pack.payload[1] == 1 && CustomEnableFlag[1] == true)
+								{
+									CustomEnableFlag[1] = false;
+									enable_user_normal_flash_write();
+									if (display_data.mode == CUSTOM_STEADY_2 || display_data.mode == LAYOUT_PHOTO_CTRL)
+									{
+										display_data.mode = STEADY;
+										display_data.init = true;
+									}
+
+									if (display_data.mode_buf == CUSTOM_STEADY_2)
+									{
+										display_data.mode_buf = STEADY;
+									}
+								}
+								else if(app_pack.payload[2] == 0 && CustomEnableFlag[2] == true)
+								{
+									CustomEnableFlag[2] = false;
+									enable_user_normal_flash_write();
+									if (display_data.mode == CUSTOM_STEADY_3 || display_data.mode == LAYOUT_PHOTO_CTRL)
+									{
+										display_data.mode = STEADY;
+										display_data.init = true;
+									}
+
+									if (display_data.mode_buf == CUSTOM_STEADY_3)
+									{
+										display_data.mode_buf = STEADY;
+									}
+								}
+								else 	
+								{
+									display_data.init = false;	
+								}
+
+								
+
+								if (display_data.init)		
+								{
 									uint8_t *src = &app_pack.payload[0];
 									res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
 								}
@@ -1532,12 +1625,14 @@ void App_data_prcoess(void)
 							if (app_pack.len == 2)
 							{
 								display_data.init = true;
-								if (app_pack.payload[1] == 0)			display_data.mode_buf = CUSTOM_DYNAMIC_1;
+								if (app_pack.payload[1] == 0 && CustomEnableFlag[3] == true)			display_data.mode_buf = CUSTOM_DYNAMIC_1;
 								else 									display_data.init = false;	
 
 								if (display_data.init)		
 								{
 									enable_user_normal_flash_write();
+
+									display_data.mode = display_data.mode_buf;
 
 									uint8_t *src = &app_pack.payload[0];
 									res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
@@ -1594,12 +1689,54 @@ void App_data_prcoess(void)
 							if (app_pack.len == 2)
 							{
 								display_data.init = true;
-								if (app_pack.payload[1] == 0)			display_data.mode_buf = CUSTOM_DYNAMIC_1;
-								else 									display_data.init = false;	
+								if (app_pack.payload[1] == 0)			
+								{
+									display_data.mode_buf = CUSTOM_DYNAMIC_1;
+									CustomEnableFlag[3] = true;
+								}
+								else 									
+								{
+									display_data.init = false;
+								}
 
 								if (display_data.init)
 								{
+									display_data.mode = display_data.mode_buf;
 									enable_user_normal_flash_write();
+									uint8_t *src = &app_pack.payload[0];
+									res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
+								}
+							}
+						}break;
+
+						case 4:
+						{
+							if (app_pack.len == 2)
+							{
+								if (app_pack.payload[1] == 0 && CustomEnableFlag[3] == true)
+								{
+									CustomEnableFlag[3] = false;
+									enable_user_normal_flash_write();
+									if (display_data.mode == CUSTOM_DYNAMIC_1 || display_data.mode == LAYOUT_PHOTO_CTRL)
+									{
+										display_data.mode = STEADY;
+										display_data.init = true;
+									}
+
+									if (display_data.mode_buf == CUSTOM_DYNAMIC_1)
+									{
+										display_data.mode_buf = STEADY;
+									}
+								}
+								else 	
+								{
+									display_data.init = false;	
+								}
+
+								
+
+								if (display_data.init)		
+								{
 									uint8_t *src = &app_pack.payload[0];
 									res_to_app(LAYOUT_CUSTOM_STEADY_ACK, (const uint8_t *)src, 2);
 								}

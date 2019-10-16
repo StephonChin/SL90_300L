@@ -322,7 +322,7 @@ void local_ip_save(void){
 		sprintf((char*)local_ip,"%u.%u.%u.%u",WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
 	else 
 		sprintf((char*)local_ip,"%u.%u.%u.%u",WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
-    m2m_printf("local ip %s\n", (char*)local_ip);
+    //m2m_printf("local ip %s\n", (char*)local_ip);
 	delay(20);
 }
 u8 *getlocal_ip(void){

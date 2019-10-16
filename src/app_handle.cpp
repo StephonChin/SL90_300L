@@ -56,7 +56,7 @@ int io_cmd_handle(u8 mode,u8 pin,u8 val,M2M_packet_T **pp_ack_data){
         io_write(mode,pin,val);
     }else{
         u8 *p_v = (u8*)io_stat_ack(mode,pin);
-        byte_printf((u8*)"----->>p_v %s", (u8*)p_v, sizeof(Ioctl_t));
+        //byte_printf((u8*)"----->>p_v %s", (u8*)p_v, sizeof(Ioctl_t));
         M2M_packet_T *p_ack  = (M2M_packet_T*)malloc( sizeof(M2M_packet_T) );
         if(p_v && p_ack){
             memset(p_ack, 0, sizeof( M2M_packet_T) );
@@ -118,12 +118,12 @@ int app_cmd_handle(u8 cmd,u8*p_data,int recv_len,M2M_packet_T **pp_ack_data){
 		case WIFI_CMD_APP_UART_SEND_RQ:
     	case WIFI_CMD_APP_LED_TWINKLE_RQ:
     	
-			m2m_bytes_dump((u8*)"\n==RCV==: ", p_data, recv_len);
-			printf("\n");
+			//m2m_bytes_dump((u8*)"\n==RCV==: ", p_data, recv_len);
+			//printf("\n");
 			ret = app_cmd_handler( p_data, recv_len, pp_ack_data);
 			break;
 		default:
-			printf("error: unknow command!!\n");
+			//printf("error: unknow command!!\n");
 			break;
 	}
 	

@@ -61,7 +61,9 @@ void read_user_normal_flash(void)
 
 	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_FAN_LAYER_OFFSET, (uint32_t*)&fan_layer, 404);
 
-	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_DYNAMIC_TIME_FLAG, (uint32_t*)DynamicTimeFlag, DYNAMIC_MAX_TIME);
+	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_DYNAMIC_TIME_FLAG, (uint32_t*	)DynamicTimeFlag, DYNAMIC_MAX_TIME);
+
+	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_CUSTOM_ENABLE, (uint32_t*	)CustomEnableFlag, 4);
 
 	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_MODE_INFORMATION_OFFSET, (uint32_t*)mode_para_data, 56 * MODE_MAX);
 }
@@ -131,6 +133,11 @@ void write_user_normal_flash(void)
 				{
 					err_num++;
 				}
+
+				if(spi_flash_write(normal_flash_add_head + NORMAL_FLASH_CUSTOM_ENABLE, (uint32_t*)CustomEnableFlag, 4) == SPI_FLASH_RESULT_OK)
+				{
+					err_num++;
+				}
 				
 				if(spi_flash_write(normal_flash_add_head + NORMAL_FLASH_MODE_INFORMATION_OFFSET, 
 				(uint32_t*)mode_para_data, 56 * MODE_MAX) == SPI_FLASH_RESULT_OK)
@@ -142,7 +149,7 @@ void write_user_normal_flash(void)
 			//enable all interrupts
 			interrupts();
 
-			if (err_num == 9)
+			if (err_num == 10)
 			{
 				//printf("=FLASH= write sucessfully!!");
 			}
@@ -169,49 +176,91 @@ void read_custom_steady_flash(uint8_t sec, uint8_t *dst)
 {
 	uint32_t flash_add_head = USER_CUSTOM_STEADY_FLASH_SECTOR * SPI_FLASH_SEC_SIZE;
 
-	spi_flash_read(flash_add_head + (uint32_t)sec * 1024, (uint32_t *)dst, LED_TOTAL * 3);
+	spi_flash_read(flash_add_head + (uint32_t)sec * 1024, (uint32_t *)dst, 1024);
 }
 
 
-uint8_t write_custom_steady_flash(uint8_t sec, uint8_t *src)
+
+uint8_t  write_custom_steady_flash(uint8_t sec, uint8_t *src)
 {
 	uint32_t flash_add_head = USER_CUSTOM_STEADY_FLASH_SECTOR * SPI_FLASH_SEC_SIZE;
 	uint32_t err_num = 0;
 
-	uint8_t dst[4][1024];
 
-	for (uint8_t i = 0; i < 4; i++)
+	uint8_t *dst0 = 0;
+	uint8_t *dst1 = 0;
+	uint8_t *dst2 = 0;
+
+	dst0 = mmalloc(1024);
+	dst1 = mmalloc(1024);
+	dst2 = mmalloc(1024);
+
+	if (dst0 != 0 && dst1 != 0 && dst2 != 0)
 	{
-		if ( i == sec)
+		if ( sec == 0)
 		{
-			mcpy(dst[i], src, LED_TOTAL * 3);
+			mcpy((uint8_t *)dst0, src, LED_TOTAL * 3);
 		}
 		else
 		{
-			read_custom_steady_flash(i, dst[i]);
+			read_custom_steady_flash(0, (uint8_t *)dst0);
 		}
-	}
 
-	//disable all interrupts
-	noInterrupts();
-	if(spi_flash_erase_sector(USER_CUSTOM_STEADY_FLASH_SECTOR) == SPI_FLASH_RESULT_OK) 
-	{
-		if(spi_flash_write(flash_add_head, (uint32_t*)dst[0], 4096) == SPI_FLASH_RESULT_OK)
+		if ( sec == 1)
 		{
-			err_num++;
+			mcpy((uint8_t *)dst1, src, LED_TOTAL * 3);
 		}
+		else
+		{
+			read_custom_steady_flash(1, (uint8_t *)dst1);
+		}
+
+		if ( sec == 2)
+		{
+			mcpy((uint8_t *)dst2, src, LED_TOTAL * 3);
+		}
+		else
+		{
+			read_custom_steady_flash(2, (uint8_t *)dst2);
+		}
+
+		//disable all interrupts
+		noInterrupts();
+		if(spi_flash_erase_sector(USER_CUSTOM_STEADY_FLASH_SECTOR) == SPI_FLASH_RESULT_OK) 
+		{
+			if(spi_flash_write(flash_add_head, (uint32_t *)dst0, 1024) == SPI_FLASH_RESULT_OK)
+			{
+				err_num++;
+			}
+
+			if(spi_flash_write(flash_add_head+1024, (uint32_t *)dst1, 1024) == SPI_FLASH_RESULT_OK)
+			{
+				err_num++;
+			}
+
+			
+			if(spi_flash_write(flash_add_head+2048, (uint32_t *)dst2, 1024) == SPI_FLASH_RESULT_OK)
+			{
+				err_num++;
+			}
+
+		}
+
+		//enable all interrupts
+		interrupts();
 	}
 
-	//enable all interrupts
-	interrupts();
+	mfree(dst0);
+	mfree(dst1);
+	mfree(dst2);
 
-	if (err_num == 1)
+	if (err_num == 3)
 	{
-		printf("=FLASH= write sucessfully!!");
+		//printf("=FLASH= write sucessfully!!");
 	}
 	else
 	{
-		printf("=FLASH= write failed!!");
+		//printf("=FLASH= write failed!!");
 	}
 
 	return err_num;
@@ -230,7 +279,7 @@ void read_custom_dynamic_flash(uint8_t sec, uint8_t *dst)
 
 	flash_add_head = (USER_CUSTOM_DYNAMIC_FLASH_SECTOR + sec_offset) * SPI_FLASH_SEC_SIZE + add_offset;
 
-	spi_flash_read(flash_add_head, (uint32_t *)dst, LED_TOTAL * 3);
+	spi_flash_read(flash_add_head, (uint32_t *)dst, 1024);
 }
 
 
@@ -242,34 +291,89 @@ uint8_t write_custom_dynamic_flash(uint8_t sec, uint8_t *src)
 
 	flash_add_head = (USER_CUSTOM_DYNAMIC_FLASH_SECTOR + sec_offset) * SPI_FLASH_SEC_SIZE;
 
-	uint8_t dst[4][1024];
+	uint8_t *dst0 = 0;
+	uint8_t *dst1 = 0;
+	uint8_t *dst2 = 0;
+	uint8_t *dst3 = 0;
 
-	for (uint8_t i = 0; i < 4; i++)
+	dst0 = mmalloc(1024);
+	dst1 = mmalloc(1024);
+	dst2 = mmalloc(1024);
+	dst3 = mmalloc(1024);
+
+	if (dst0 != 0 && dst1 != 0 && dst2 != 0 && dst3 != 0)
 	{
-		if ( i == (sec % 4))
+		uint8_t i = (sec % 4);
+		if ( i == 0)
 		{
-			mcpy(dst[i], src, LED_TOTAL * 3);
+			mcpy((uint8_t *)dst0, src, LED_TOTAL * 3);
 		}
 		else
 		{
-			read_custom_steady_flash(sec_offset * 4 + i, dst[i]);
+			read_custom_steady_flash(sec_offset * 4 + 0, (uint8_t *)dst0);
 		}
-	}
 
-	//disable all interrupts
-	noInterrupts();
-	if(spi_flash_erase_sector(USER_CUSTOM_DYNAMIC_FLASH_SECTOR+sec_offset) == SPI_FLASH_RESULT_OK) 
-	{
-		if(spi_flash_write(flash_add_head, (uint32_t *)dst[0], 4096) == SPI_FLASH_RESULT_OK)
+		if ( i == 1)
 		{
-			err_num++;
+			mcpy((uint8_t *)dst1, src, LED_TOTAL * 3);
 		}
+		else
+		{
+			read_custom_steady_flash(sec_offset * 4 + 1, (uint8_t *)dst1);
+		}
+
+		if ( i == 2)
+		{
+			mcpy((uint8_t *)dst2, src, LED_TOTAL * 3);
+		}
+		else
+		{
+			read_custom_steady_flash(sec_offset * 4 + 2, (uint8_t *)dst2);
+		}
+
+		if ( i == 3)
+		{
+			mcpy((uint8_t *)dst3, src, LED_TOTAL * 3);
+		}
+		else
+		{
+			read_custom_steady_flash(sec_offset * 4 + 3, (uint8_t *)dst3);
+		}
+
+
+		//disable all interrupts
+		noInterrupts();
+		if(spi_flash_erase_sector(USER_CUSTOM_DYNAMIC_FLASH_SECTOR+sec_offset) == SPI_FLASH_RESULT_OK) 
+		{
+			if(spi_flash_write(flash_add_head, (uint32_t *)dst0, 1024) == SPI_FLASH_RESULT_OK)
+			{
+				err_num++;
+			}
+			if(spi_flash_write(flash_add_head+1024, (uint32_t *)dst1, 1024) == SPI_FLASH_RESULT_OK)
+			{
+				err_num++;
+			}
+			if(spi_flash_write(flash_add_head+2048, (uint32_t *)dst2, 1024) == SPI_FLASH_RESULT_OK)
+			{
+				err_num++;
+			}
+			if(spi_flash_write(flash_add_head+3072, (uint32_t *)dst3, 1024) == SPI_FLASH_RESULT_OK)
+			{
+				err_num++;
+			}
+		}
+
+		//enable all interrupts
+		interrupts();
 	}
 
-	//enable all interrupts
-	interrupts();
 
-	if (err_num == 1)
+	mfree(dst0);
+	mfree(dst1);
+	mfree(dst2);
+	mfree(dst3);
+
+	if (err_num == 4)
 	{
 		printf("=FLASH= write sucessfully!!");
 	}

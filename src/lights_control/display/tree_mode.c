@@ -1201,10 +1201,135 @@ void Display_Tree_Fireworks(void)
 }
 
 
+
+//rainbow mode by triange layer
 void Display_Tree_Vertigo(void)
 {
-	display_data.mode= HORIZONTAL;
-	display_data.mode_buf = HORIZONTAL;
+	if (triangle_layer.en_flag == false)
+	{
+		display_data.mode++;
+		display_data.mode_buf++;
+	}
+	else
+	{
+		uint16_t temp = 0;  
+		uint16_t	i = 0;
+		uint16_t	j = 0;
+
+		if(display_data.init == true)
+		{	
+			display_data.init = false;
+
+			Para_Err_Check(&mode_para_data[VERTIGO]);
+
+			BrightLevel = PARA_BRIGHT_MAX - mode_para_data[VERTIGO].Bright + 1;
+
+			SpeedCtrl = 0;
+			OtherCtrl = 0;
+			TempColor = 0;
+			TempStep  = 0;
+
+			TempR = 0;
+			TempG = 0;
+			TempB = 0;
+			TopR = 240;
+			TopG = 240;
+			TopB = 240;
+
+			switch (mode_para_data[VERTIGO].Other)
+			{
+				default:    FadeR = 12;	TopR = 240;      break;
+				case 9:     FadeR = 10;	TopR = 250;      break;
+				case 8:     FadeR = 8;	TopR = 240;      break;
+				case 7:     FadeR = 7; 	TopR = 245;     break;
+				case 6:     FadeR = 6; 	TopR = 240;     break;
+				case 5:     FadeR = 5; 	TopR = 225;     break;
+				case 4:     FadeR = 5; 	TopR = 250;     break;
+				case 3:     FadeR = 4; 	TopR = 220;     break;
+				case 2:     FadeR = 4; 	TopR = 240;     break;
+				case 1:     FadeR = 3; 	TopR = 210;     break;
+				case 0:     FadeR = 3; 	TopR = 240;     break;
+			}
+
+			FadeG = FadeR;
+			FadeB = FadeR;
+			TopG = TopR;
+			TopB = TopR;
+
+			Display_All_Set(0,0,0);
+
+			ModeFirstFlag = true;
+			return;
+		}
+
+
+
+		SpeedCtrl++;
+		//if (SpeedCtrl > ((PARA_SPEED_MAX - mode_para_data[RAINBOW].Speed) * (uint8_t)(1 - ModeFirstFlag)))
+		{
+			SpeedCtrl = 0;
+
+			if (ModeFirstFlag)
+			{
+				ModeFirstFlag = false;
+				j = LED_TOTAL;
+			}
+			else
+			{
+				j = mode_para_data[VERTIGO].Speed + 1;
+			}
+
+			for (i = 0; i < j; i++)
+			{
+				switch (TempStep)
+				{
+					case 0:
+					{
+						if (TempR < TopR)		TempR += FadeR;
+						if(TempR == TopR)		TempStep++;
+					} break;
+
+					case 1:
+					{
+						if (TempG < TopG)		TempG += FadeG;
+						if (TempG == TopG)		TempStep++;
+					} break;
+
+					case 2:
+					{
+						if (TempR > 0)			TempR -= FadeR;
+						if (TempR == 0)			TempStep++;
+					} break;
+
+					case 3:
+					{
+						if (TempB < TopB)		TempB += FadeB;
+						if (TempB == TopB)		TempStep++;
+					} break;
+
+					case 4:
+					{
+						if (TempG > 0)			TempG -= FadeG;
+						if (TempG == 0)			TempStep++;
+					} break;
+
+					case 5:
+					{
+						if (TempR < TopR)		TempR += FadeR;
+						if (TempR == TopR)		TempStep++;
+					} break;
+
+					case 6:
+					{
+						if (TempB > 0)			TempB -= FadeB;
+						if (TempB == 0)			TempStep = 1;
+					} break;
+				}
+
+				Shift_Triangle_RightLeft(&TempR, &TempG, &TempB);
+			}
+		}
+	}
 }
 void Display_Tree_Horizontal(void)
 {
@@ -1643,20 +1768,362 @@ void Display_Tree_Updwn(void)
 	}
 }
 
+//rolling mode by triangle layer
 void Display_Tree_Diagonal(void)
 {
-	display_data.mode= COLOR_RAND;
-	display_data.mode_buf = COLOR_RAND;
+	if (triangle_layer.en_flag == false)
+	{
+		display_data.mode++;
+		display_data.mode_buf++;
+	}
+	else
+	{
+		uint16_t temp = 0;  
+		uint16_t temp1 = 0;
+		uint16_t temp2 = 0;
+		uint16_t i = 0;
+		uint16_t j = 0;
+
+		if(display_data.init == true)
+		{	
+			display_data.init = false;
+
+			Para_Err_Check(&mode_para_data[DIAGONAL]);
+			BrightLevel = PARA_BRIGHT_MAX - mode_para_data[DIAGONAL].Bright + 1;
+
+			SpeedCtrl = 0;
+			OtherCtrl = 0;
+			TempColor = 0;
+			TempStep  = 0;
+			RptCtrl   = 0;
+
+			TempR = mode_para_data[DIAGONAL].Color[TempColor].BufR;
+			TempG = mode_para_data[DIAGONAL].Color[TempColor].BufG;
+			TempB = mode_para_data[DIAGONAL].Color[TempColor].BufB;
+
+			RptTotal = PARA_OTHER_MAX - mode_para_data[DIAGONAL].Other + 3; 
+
+			Display_All_Set(0,0,0);
+
+			ModeFirstFlag = true;
+
+			return;
+		}
+
+
+		SpeedCtrl++;
+		if (SpeedCtrl > (PARA_SPEED_MAX - mode_para_data[DIAGONAL].Speed) * (uint8_t)(1 - ModeFirstFlag))
+		{
+			SpeedCtrl = 0;
+
+			if (ModeFirstFlag)
+			{
+				ModeFirstFlag = false;
+				j = vertical_layer.layer_total;
+			}
+			else
+			{
+				j = 1;
+			}
+
+			for (i = 0; i < j; i++)
+			{
+				switch (TempStep)
+				{
+					case 0:
+					{
+						RptCtrl++;
+						if (RptCtrl >= RptTotal - 1)
+						{
+							RptCtrl = 0;
+							TempStep++;
+						}
+					}break;
+
+					//Check the count of color, if the mode has only one color, fill it with dark
+					case 1:
+					{
+						if (mode_para_data[DIAGONAL].ColorNum == 1)   TempStep = 2;
+						else                                      TempStep = 3;
+					} break;
+
+					//dark
+					case 2:
+					{
+						TempR = mode_para_data[DIAGONAL].Color[0].BufR / 4;
+						TempG = mode_para_data[DIAGONAL].Color[0].BufG / 4;
+						TempB = mode_para_data[DIAGONAL].Color[0].BufB / 4;
+						RptCtrl++;
+						if (RptCtrl > RptTotal)
+						{
+							RptCtrl = 0;
+							TempStep = 0;
+							TempR = mode_para_data[DIAGONAL].Color[0].BufR;
+							TempG = mode_para_data[DIAGONAL].Color[0].BufG;
+							TempB = mode_para_data[DIAGONAL].Color[0].BufB;
+						}
+					} break;
+
+					//change color
+					case 3:
+					{
+						TempColor++;
+						if (TempColor >= mode_para_data[DIAGONAL].ColorNum)   TempColor = 0;
+						TempR = mode_para_data[DIAGONAL].Color[TempColor].BufR;
+						TempG = mode_para_data[DIAGONAL].Color[TempColor].BufG;
+						TempB = mode_para_data[DIAGONAL].Color[TempColor].BufB;
+						TempStep = 0;
+					} break;
+				}
+
+				Shift_Triangle_RightLeft(&TempR, &TempG, &TempB);
+			}
+		}
+	}
 }
+
+//rainbow mode by fan layer
 void Display_Tree_Sunset(void)
 {
-  	display_data.mode= COLOR_RAND;
-	display_data.mode_buf = COLOR_RAND;
+  	if (fan_layer.en_flag == false)
+	{
+		display_data.mode++;
+		display_data.mode_buf++;
+	}
+	else
+	{
+		uint16_t temp = 0;  
+		uint16_t temp1 = 0;
+		uint16_t temp2 = 0;
+		uint16_t i = 0;
+		uint16_t j = 0;
+
+		if(display_data.init == true)
+		{	
+			display_data.init = false;
+
+			Para_Err_Check(&mode_para_data[SUNSET]);
+			BrightLevel = PARA_BRIGHT_MAX - mode_para_data[SUNSET].Bright + 1;
+
+			SpeedCtrl = 0;
+			OtherCtrl = 0;
+			TempColor = 0;
+			TempStep  = 0;
+			RptCtrl   = 0;
+
+			TempR = mode_para_data[SUNSET].Color[TempColor].BufR;
+			TempG = mode_para_data[SUNSET].Color[TempColor].BufG;
+			TempB = mode_para_data[SUNSET].Color[TempColor].BufB;
+
+			RptTotal = PARA_OTHER_MAX - mode_para_data[SUNSET].Other + 3; 
+
+			Display_All_Set(0,0,0);
+
+			ModeFirstFlag = true;
+
+			return;
+		}
+
+
+		SpeedCtrl++;
+		if (SpeedCtrl > (PARA_SPEED_MAX - mode_para_data[SUNSET].Speed) * (uint8_t)(1 - ModeFirstFlag))
+		{
+			SpeedCtrl = 0;
+
+			if (ModeFirstFlag)
+			{
+				ModeFirstFlag = false;
+				j = vertical_layer.layer_total;
+			}
+			else
+			{
+				j = 1;
+			}
+
+			for (i = 0; i < j; i++)
+			{
+				switch (TempStep)
+				{
+					case 0:
+					{
+						RptCtrl++;
+						if (RptCtrl >= RptTotal - 1)
+						{
+							RptCtrl = 0;
+							TempStep++;
+						}
+					}break;
+
+					//Check the count of color, if the mode has only one color, fill it with dark
+					case 1:
+					{
+						if (mode_para_data[SUNSET].ColorNum == 1)   TempStep = 2;
+						else                                      TempStep = 3;
+					} break;
+
+					//dark
+					case 2:
+					{
+						TempR = mode_para_data[SUNSET].Color[0].BufR / 4;
+						TempG = mode_para_data[SUNSET].Color[0].BufG / 4;
+						TempB = mode_para_data[SUNSET].Color[0].BufB / 4;
+						RptCtrl++;
+						if (RptCtrl > RptTotal)
+						{
+							RptCtrl = 0;
+							TempStep = 0;
+							TempR = mode_para_data[SUNSET].Color[0].BufR;
+							TempG = mode_para_data[SUNSET].Color[0].BufG;
+							TempB = mode_para_data[SUNSET].Color[0].BufB;
+						}
+					} break;
+
+					//change color
+					case 3:
+					{
+						TempColor++;
+						if (TempColor >= mode_para_data[SUNSET].ColorNum)   TempColor = 0;
+						TempR = mode_para_data[SUNSET].Color[TempColor].BufR;
+						TempG = mode_para_data[SUNSET].Color[TempColor].BufG;
+						TempB = mode_para_data[SUNSET].Color[TempColor].BufB;
+						TempStep = 0;
+					} break;
+				}
+
+				Shift_Fan_LeftRight(&TempR, &TempG, &TempB);
+			}
+		}
+	}
 }
+
+//rainbow mode by fan layer
 void Display_Tree_Vintage(void)
 {
-	display_data.mode= COLOR_RAND;
-	display_data.mode_buf = COLOR_RAND;
+	if (fan_layer.en_flag == false)
+	{
+		display_data.mode++;
+		display_data.mode_buf++;
+	}
+	else
+	{
+		uint16_t temp = 0;  
+		uint16_t	i = 0;
+		uint16_t	j = 0;
+
+		if(display_data.init == true)
+		{	
+			display_data.init = false;
+
+			Para_Err_Check(&mode_para_data[VINTAGE]);
+
+			BrightLevel = PARA_BRIGHT_MAX - mode_para_data[VINTAGE].Bright + 1;
+
+			SpeedCtrl = 0;
+			OtherCtrl = 0;
+			TempColor = 0;
+			TempStep  = 0;
+
+			TempR = 0;
+			TempG = 0;
+			TempB = 0;
+			TopR = 240;
+			TopG = 240;
+			TopB = 240;
+
+			switch (mode_para_data[VINTAGE].Other)
+			{
+				default:    FadeR = 12;	TopR = 240;      break;
+				case 9:     FadeR = 10;	TopR = 250;      break;
+				case 8:     FadeR = 8;	TopR = 240;      break;
+				case 7:     FadeR = 7; 	TopR = 245;     break;
+				case 6:     FadeR = 6; 	TopR = 240;     break;
+				case 5:     FadeR = 5; 	TopR = 225;     break;
+				case 4:     FadeR = 5; 	TopR = 250;     break;
+				case 3:     FadeR = 4; 	TopR = 220;     break;
+				case 2:     FadeR = 4; 	TopR = 240;     break;
+				case 1:     FadeR = 3; 	TopR = 210;     break;
+				case 0:     FadeR = 3; 	TopR = 240;     break;
+			}
+
+			FadeG = FadeR;
+			FadeB = FadeR;
+			TopG = TopR;
+			TopB = TopR;
+
+			Display_All_Set(0,0,0);
+
+			ModeFirstFlag = true;
+			return;
+		}
+
+
+
+		SpeedCtrl++;
+		//if (SpeedCtrl > ((PARA_SPEED_MAX - mode_para_data[RAINBOW].Speed) * (uint8_t)(1 - ModeFirstFlag)))
+		{
+			SpeedCtrl = 0;
+
+			if (ModeFirstFlag)
+			{
+				ModeFirstFlag = false;
+				j = LED_TOTAL;
+			}
+			else
+			{
+				j = mode_para_data[VINTAGE].Speed + 1;
+			}
+
+			for (i = 0; i < j; i++)
+			{
+				switch (TempStep)
+				{
+					case 0:
+					{
+						if (TempR < TopR)		TempR += FadeR;
+						if(TempR == TopR)		TempStep++;
+					} break;
+
+					case 1:
+					{
+						if (TempG < TopG)		TempG += FadeG;
+						if (TempG == TopG)		TempStep++;
+					} break;
+
+					case 2:
+					{
+						if (TempR > 0)			TempR -= FadeR;
+						if (TempR == 0)			TempStep++;
+					} break;
+
+					case 3:
+					{
+						if (TempB < TopB)		TempB += FadeB;
+						if (TempB == TopB)		TempStep++;
+					} break;
+
+					case 4:
+					{
+						if (TempG > 0)			TempG -= FadeG;
+						if (TempG == 0)			TempStep++;
+					} break;
+
+					case 5:
+					{
+						if (TempR < TopR)		TempR += FadeR;
+						if (TempR == TopR)		TempStep++;
+					} break;
+
+					case 6:
+					{
+						if (TempB > 0)			TempB -= FadeB;
+						if (TempB == 0)			TempStep = 1;
+					} break;
+				}
+
+				Shift_Fan_LeftRight(&TempR, &TempG, &TempB);
+			}
+		}
+	}
 }
 void Display_Tree_Glow(void)
 {
@@ -2061,9 +2528,19 @@ void Display_Tree_Alternate(void)
 void Display_Custom_Steady(uint8_t sec)
 {
 	if (display_data.init)
-	{
-		display_data.init = false;
-		read_custom_steady_flash(sec, (uint8_t *)LedData);
+	{	
+		uint8_t	*dst = 0;
+
+		dst = mmalloc(1024);
+
+		if (dst != 0)
+		{
+			display_data.init = false;
+			read_custom_steady_flash(sec, (uint8_t *)dst);
+			mcpy((uint8_t *)LedData, dst, LED_TOTAL * 3);
+		}
+
+		mfree(dst);
 	}
 }
 
@@ -2085,7 +2562,15 @@ void Display_Custom_Dynamic(void)
 		DynamicTime = 0;
 		if (DynamicTimeFlag[DynamicTimeStep] == true)
 		{
-			read_custom_dynamic_flash(DynamicTimeStep, (uint8_t *)LedData);
+			uint8_t	*dst = 0;
+
+			dst = mmalloc(1024);
+			if (dst != 0)
+			{
+				read_custom_dynamic_flash(DynamicTimeStep, (uint8_t *)dst);
+				mcpy((uint8_t *)LedData, dst, LED_TOTAL);
+			}
+			mfree(dst);
 		}
 		else
 		{
