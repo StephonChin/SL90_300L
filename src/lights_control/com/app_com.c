@@ -27,7 +27,7 @@ int app_cmd_handler(uint8_t *pdata, int rcv_len, M2M_packet_T **pp_ack_data)
     if(pdata && rcv_len && (rcv_len < APP_PACK_SIZE_MAX)){
         uint8_t *dst = (uint8_t *)&app_pack;
 
-		memcpy(dst, p, rcv_len);
+		    memcpy(dst, p, rcv_len);
     }
 
 

@@ -33,7 +33,7 @@
 /* command value(from app to device) */
 #define     CHECK_ALL_STATUS_CMD        	(uint8_t)0x01
 #define     CHECK_MODE_STATUS_CMD       	(uint8_t)0x02
-#define     CHECK_NAME_STATUS_CMD       	(uint8_t)0x03
+#define     CHECK_LAYOUT_INFO_CMD       	(uint8_t)0x03
 
 #define     SET_ON_OFF_CMD             	 	(uint8_t)0x10
 #define     SET_MODE_CMD                	(uint8_t)0x11
@@ -74,7 +74,7 @@
 /* ack command value(from device to app) */
 #define     ALL_STATUS_ACK          		(uint8_t)0x81
 #define     MODE_STATUS_ACK         		(uint8_t)0x82
-#define     NAME_STATUS_ACK         		(uint8_t)0x83
+#define		LAYOUT_INFO_ACK					(uint8_t)0x83
 
 #define		CNTDWN_HOUR_STATUS_ACK			(uint8_t)0xb4
 #define		REALTIME_STATUS_ACK				(uint8_t)0xb5

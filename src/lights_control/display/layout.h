@@ -14,6 +14,7 @@
 #define		STR_LAYER_MAX			20
 #define		STR_LAYER_SEC			15
 
+#define		INFO_STRUCT_TOTAL		404/* 1+1+100+301+1 */
 
 //typedef
 typedef struct LAYER_INFO

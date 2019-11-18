@@ -168,7 +168,7 @@ void Display_Layout_Photo_Ctrl(void)
   */
 void Display_Layout_None_Init(void)
 {
-	vertical_layer.en_flag = false;
+	vertical_layer.en_flag = 0;
 	vertical_layer.layer_total = STR_LAYER_MAX;
 
 	

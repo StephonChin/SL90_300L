@@ -10,8 +10,11 @@
 #define PRODUCT_ID (0X01)
 /*服务器 ID*/
 #define PRODUCT_SERVER_ID ("01100000000000000000000000000000")
-/*服务器 地址*/
+/*服务器    dms*/
 #define PRODUCT_SERVER_CNAME  ("m2mrelay.nielink.com")
+/*服务器 地址*/
+#define PRODUCT_SERVER_IP  ("13.52.66.73")
+
 /*服务器端口*/
 #define PRODUCT_SERVER_PORT   (9527)
 /*本地端口*/

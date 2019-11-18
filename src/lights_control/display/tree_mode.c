@@ -59,9 +59,9 @@ static void Shift_P(Layer_T *p, uint8_t *r, uint8_t *g, uint8_t *b)
 		
 	}
 	led = p->head[0];
-	LedData[led].DutyR = r;
-	LedData[led].DutyG = g;
-	LedData[led].DutyB = b;
+	LedData[led].DutyR = *r;
+	LedData[led].DutyG = *g;
+	LedData[led].DutyB = *b;
 
 	for (uint16_t i = 0; i < LED_TOTAL; i++)
 	{
@@ -1205,7 +1205,7 @@ void Display_Tree_Fireworks(void)
 //rainbow mode by triange layer
 void Display_Tree_Vertigo(void)
 {
-	if (triangle_layer.en_flag == false)
+	if (triangle_layer.en_flag == 0)
 	{
 		display_data.mode++;
 		display_data.mode_buf++;
@@ -1771,7 +1771,7 @@ void Display_Tree_Updwn(void)
 //rolling mode by triangle layer
 void Display_Tree_Diagonal(void)
 {
-	if (triangle_layer.en_flag == false)
+	if (triangle_layer.en_flag == 0)
 	{
 		display_data.mode++;
 		display_data.mode_buf++;
@@ -1801,7 +1801,8 @@ void Display_Tree_Diagonal(void)
 			TempG = mode_para_data[DIAGONAL].Color[TempColor].BufG;
 			TempB = mode_para_data[DIAGONAL].Color[TempColor].BufB;
 
-			RptTotal = PARA_OTHER_MAX - mode_para_data[DIAGONAL].Other + 3; 
+			RptTotal = PARA_OTHER_MAX - mode_para_data[DIAGONAL].Other + 2; 
+			//RptTotal = 5;
 
 			Display_All_Set(0,0,0);
 
@@ -1836,15 +1837,17 @@ void Display_Tree_Diagonal(void)
 						if (RptCtrl >= RptTotal - 1)
 						{
 							RptCtrl = 0;
-							TempStep++;
+							//TempStep++;
+							if (mode_para_data[DIAGONAL].ColorNum == 1)   	TempStep = 2;
+							else                                      		TempStep = 3;
 						}
 					}break;
 
 					//Check the count of color, if the mode has only one color, fill it with dark
 					case 1:
 					{
-						if (mode_para_data[DIAGONAL].ColorNum == 1)   TempStep = 2;
-						else                                      TempStep = 3;
+						if (mode_para_data[DIAGONAL].ColorNum == 1)   	TempStep = 2;
+						else                                      		TempStep = 3;
 					} break;
 
 					//dark
@@ -1885,16 +1888,13 @@ void Display_Tree_Diagonal(void)
 //rainbow mode by fan layer
 void Display_Tree_Sunset(void)
 {
-  	if (fan_layer.en_flag == false)
+  	if (fan_layer.en_flag == 0)
 	{
 		display_data.mode++;
 		display_data.mode_buf++;
 	}
 	else
 	{
-		uint16_t temp = 0;  
-		uint16_t temp1 = 0;
-		uint16_t temp2 = 0;
 		uint16_t i = 0;
 		uint16_t j = 0;
 
@@ -1915,7 +1915,8 @@ void Display_Tree_Sunset(void)
 			TempG = mode_para_data[SUNSET].Color[TempColor].BufG;
 			TempB = mode_para_data[SUNSET].Color[TempColor].BufB;
 
-			RptTotal = PARA_OTHER_MAX - mode_para_data[SUNSET].Other + 3; 
+			//RptTotal = PARA_OTHER_MAX - mode_para_data[SUNSET].Other + 3; 
+			RptTotal = 2;
 
 			Display_All_Set(0,0,0);
 
@@ -1950,7 +1951,9 @@ void Display_Tree_Sunset(void)
 						if (RptCtrl >= RptTotal - 1)
 						{
 							RptCtrl = 0;
-							TempStep++;
+							//TempStep++;
+							if (mode_para_data[SUNSET].ColorNum == 1)   TempStep = 2;
+							else                                      TempStep = 3;
 						}
 					}break;
 
@@ -1999,7 +2002,7 @@ void Display_Tree_Sunset(void)
 //rainbow mode by fan layer
 void Display_Tree_Vintage(void)
 {
-	if (fan_layer.en_flag == false)
+	if (fan_layer.en_flag == 0)
 	{
 		display_data.mode++;
 		display_data.mode_buf++;

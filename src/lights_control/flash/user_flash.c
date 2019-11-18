@@ -55,11 +55,11 @@ void read_user_normal_flash(void)
 
 	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_MUSIC_INFORMATION_OFFSET, (uint32_t*)&music_data, 8);
 
-	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_VERTICAL_LAYER_OFFSET, (uint32_t*)&vertical_layer, 404);
+	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_VERTICAL_LAYER_OFFSET, (uint32_t*)&vertical_layer, INFO_STRUCT_TOTAL);
 
-	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_TRIANGLE_LAYER_OFFSET, (uint32_t*)&triangle_layer, 404);
+	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_TRIANGLE_LAYER_OFFSET, (uint32_t*)&triangle_layer, INFO_STRUCT_TOTAL);
 
-	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_FAN_LAYER_OFFSET, (uint32_t*)&fan_layer, 404);
+	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_FAN_LAYER_OFFSET, (uint32_t*)&fan_layer, INFO_STRUCT_TOTAL);
 
 	spi_flash_read(normal_flash_add_head + NORMAL_FLASH_DYNAMIC_TIME_FLAG, (uint32_t*	)DynamicTimeFlag, DYNAMIC_MAX_TIME);
 
@@ -114,17 +114,17 @@ void write_user_normal_flash(void)
 					err_num++;
 				}
 				
-				if(spi_flash_write(normal_flash_add_head + NORMAL_FLASH_VERTICAL_LAYER_OFFSET, (uint32_t*)&vertical_layer, 404) == SPI_FLASH_RESULT_OK)
+				if(spi_flash_write(normal_flash_add_head + NORMAL_FLASH_VERTICAL_LAYER_OFFSET, (uint32_t*)&vertical_layer, INFO_STRUCT_TOTAL) == SPI_FLASH_RESULT_OK)
 				{
 					err_num++;
 				}
 				
-				if(spi_flash_write(normal_flash_add_head + NORMAL_FLASH_TRIANGLE_LAYER_OFFSET, (uint32_t*)&triangle_layer, 404) == SPI_FLASH_RESULT_OK)
+				if(spi_flash_write(normal_flash_add_head + NORMAL_FLASH_TRIANGLE_LAYER_OFFSET, (uint32_t*)&triangle_layer, INFO_STRUCT_TOTAL) == SPI_FLASH_RESULT_OK)
 				{
 					err_num++;
 				}
 				
-				if(spi_flash_write(normal_flash_add_head + NORMAL_FLASH_FAN_LAYER_OFFSET, (uint32_t*)&fan_layer, 404) == SPI_FLASH_RESULT_OK)
+				if(spi_flash_write(normal_flash_add_head + NORMAL_FLASH_FAN_LAYER_OFFSET, (uint32_t*)&fan_layer, INFO_STRUCT_TOTAL) == SPI_FLASH_RESULT_OK)
 				{
 					err_num++;
 				}

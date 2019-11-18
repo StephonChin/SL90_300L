@@ -21,6 +21,8 @@
 #include <SPI.h>
 
 #include "../../config/config.h"
+#include "../../../../app_config.h"
+
 #include "../../include/m2m_app.h"
 
 #include "../../include/m2m.h"
@@ -95,7 +97,7 @@ u32 dns_ip(const char *sname)
     if(host_ip == 0xFFFFFFFF)
     {
         m2m_debug_level(M2M_LOG_ERROR,"link server error");
-        host_ip = 0;
+        host_ip =  inet_addr(TST_SERVER_IP);
     }
 
     return host_ip;

@@ -118,9 +118,9 @@ void User_Data_Init(void)
 	read_user_normal_flash();
 	
 	//Yes - Confirm if it is the first time to write the user normal flash? 
-	if (flash_first_number != 0x55aaaa55)
+	if (flash_first_number != 0x55aa55aa)
 	{
-		flash_first_number = 0x55aaaa55;
+		flash_first_number = 0x55aa55aa;
 		
 		display_data.mode_buf 	= STEADY;
 		display_data.mode 		= display_data.mode_buf;
@@ -139,9 +139,9 @@ void User_Data_Init(void)
 		music_data.enable_flag 	= false;
 		music_data.mode 		= 0;
 
-		vertical_layer.en_flag = false;
-		triangle_layer.en_flag = false;
-		fan_layer.en_flag = false;
+		vertical_layer.en_flag = 0;
+		triangle_layer.en_flag = 0;
+		fan_layer.en_flag = 0;
 		Display_Layout_None_Init();
 
 		for (uint8_t i = 0; i < 4; i++)
@@ -185,6 +185,12 @@ void User_Data_Init(void)
 		i = RAINBOW;
 		mode_para_data[i].Other = 4;
 
+		i = VERTIGO;
+		mode_para_data[i].Other = 4;
+
+		i = VINTAGE;
+		mode_para_data[i].Other = 4;
+
 		i = FADE;
 		mode_para_data[i].ColorVal = CHRISTMAS;
 		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
@@ -219,6 +225,18 @@ void User_Data_Init(void)
 		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
 
 		i = UPDWN;
+		mode_para_data[i].Other  = 5;
+		mode_para_data[i].ColorVal = MUTICOLOR;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = DIAGONAL;
+		mode_para_data[i].Speed = 0;
+		mode_para_data[i].Other  = 5;
+		mode_para_data[i].ColorVal = MUTICOLOR;
+		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
+
+		i = SUNSET;
+		mode_para_data[i].Speed = 0;
 		mode_para_data[i].Other  = 5;
 		mode_para_data[i].ColorVal = MUTICOLOR;
 		mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
@@ -272,7 +290,7 @@ void User_Data_Init(void)
 		if (music_data.mode > 1)			music_data.mode = 0;
 
 		//vertical layer information
-		if (vertical_layer.en_flag == false)
+		if (vertical_layer.en_flag == 0)
 		{
 			Display_Layout_None_Init();
 		}
@@ -299,7 +317,7 @@ void User_Data_Init(void)
 
 			if (!err_flag)
 			{
-				for (uint8_t i = 0; i < LED_TOTAL; i++)
+				for (uint16_t i = 0; i < LED_TOTAL; i++)
 				{
 					if (vertical_layer.info[i] >= LAYER_MAX)
 					{
@@ -312,13 +330,13 @@ void User_Data_Init(void)
 			//if the layer information is wrong.
 			if (err_flag)
 			{
-				vertical_layer.en_flag = false;
+				vertical_layer.en_flag = 0;
 				enable_user_normal_flash_write();
 			}
 		}
 
 		//triangle layer information
-		if (triangle_layer.en_flag)
+		if (triangle_layer.en_flag > 0)
 		{
 			uint8_t err_flag = false;
 
@@ -341,7 +359,7 @@ void User_Data_Init(void)
 
 			if (!err_flag)
 			{
-				for (uint8_t i = 0; i < LED_TOTAL; i++)
+				for (uint16_t i = 0; i < LED_TOTAL; i++)
 				{
 					if (triangle_layer.info[i] >= LAYER_MAX)
 					{
@@ -354,13 +372,13 @@ void User_Data_Init(void)
 			//if the layer information is wrong.
 			if (err_flag)
 			{
-				triangle_layer.en_flag = false;
+				triangle_layer.en_flag = 0;
 				enable_user_normal_flash_write();
 			}
 		}
 
 		//fan layer information
-		if (fan_layer.en_flag)
+		if (fan_layer.en_flag > 0)
 		{
 			uint8_t err_flag = false;
 
@@ -383,7 +401,7 @@ void User_Data_Init(void)
 
 			if (!err_flag)
 			{
-				for (uint8_t i = 0; i < LED_TOTAL; i++)
+				for (uint16_t i = 0; i < LED_TOTAL; i++)
 				{
 					if (fan_layer.info[i] >= LAYER_MAX)
 					{
@@ -396,7 +414,7 @@ void User_Data_Init(void)
 			//if the layer information is wrong.
 			if (err_flag)
 			{
-				fan_layer.en_flag = false;
+				fan_layer.en_flag = 0;
 				enable_user_normal_flash_write();
 			}
 		}
@@ -453,7 +471,7 @@ void User_Data_Init(void)
 					mode_para_data[i].ColorNum = setting_mode_preset_color(i, mode_para_data[i].ColorVal);
 				}
 
-				if (i == RAINBOW)
+				if (i == RAINBOW || i == VERTIGO || i == VINTAGE)
 				{
 					mode_para_data[i].Other = 4;
 				}
@@ -492,7 +510,7 @@ void User_Data_Init(void)
 				}
 
 
-				if (i == HORIZONTAL)
+				if (i == HORIZONTAL || i == SUNSET || i == DIAGONAL)
 				{
 					mode_para_data[i].Other  = 10;
 					mode_para_data[i].ColorVal = HALLOWEEN;
@@ -605,12 +623,12 @@ void Key_Process(void)
 			display_data.mode_buf++;
 			if (display_data.mode_buf > CURRENT_MODE_MAX)
 			{
-			display_data.mode_buf = 0;
-			display_data.mode= POWER_OFF;
+				display_data.mode_buf = 0;
+				display_data.mode= POWER_OFF;
 			}
 			else
 			{
-			display_data.mode= display_data.mode_buf;
+				display_data.mode= display_data.mode_buf;
 			}
 		}
 
@@ -642,7 +660,7 @@ void Key_Process(void)
 		mode_change_flag = true;
 		mode_change_time = 0;
 
-		if ((i != POWER_OFF) && (i != RAINBOW) && (i != COLOR_RAND) && (i != CARNIVAL) && (i != ALTERNATE))
+		if ((i != POWER_OFF) && (i != RAINBOW) && (i != VERTIGO) && (i != VINTAGE) && (i != COLOR_RAND) && (i != CARNIVAL) && (i != ALTERNATE))
 		{
 			display_data.init = true;
 
@@ -1059,6 +1077,55 @@ void App_data_prcoess(void)
 					}
 				}break;
 
+				case CHECK_LAYOUT_INFO_CMD:
+				{
+					if (app_pack.len == 1)
+					{
+						uint8_t *src = 0;
+						uint8_t *dst = 0;
+						uint8_t *dstbuf = 0;
+						uint16_t size = ((LED_TOTAL + 2) / 4) * 4;
+
+						dstbuf = mmalloc(size);
+						dst = dstbuf;
+						if (app_pack.payload[0] == 0)
+						{
+							*dst = 0;
+							dst++;
+							*dst = vertical_layer.layer_total;
+							dst++;
+							src = vertical_layer.info;
+						}
+						else if (app_pack.payload[0] == 1)
+						{
+							*dst = 1;
+							dst++;
+							*dst = vertical_layer.layer_total;
+							dst++;
+							src = triangle_layer.info;
+						}
+						else if (app_pack.payload[0] == 3)
+						{
+							*dst = 3;
+							dst++;
+							*dst = vertical_layer.layer_total;
+							dst++;
+							src = fan_layer.info;
+						}
+
+						for (uint16_t i = 0; i < LED_TOTAL; i++)
+						{
+							*dst = *src;
+							dst++;
+							src++;
+						}
+
+						res_to_app(LAYOUT_INFOR_ACK, (const uint8_t *)dstbuf, LED_TOTAL+2);
+
+						mfree(dstbuf);
+					}
+				}break;
+
 				//set mode
 				//mode value, speed, bright level or other control value
 				case SET_MODE_CMD:
@@ -1385,6 +1452,7 @@ void App_data_prcoess(void)
 				case LAYOUT_INFO_CMD:
 				{
 					uint16_t len = app_pack.len;
+					
 					if (len == 303)
 					{
 						Layer_T *dst = 0;
@@ -1410,18 +1478,25 @@ void App_data_prcoess(void)
 
 							default:
 							{
-
 							}break;
 						}
 
 						uint8_t total = app_pack.payload[1];
 						if (total < LAYER_MAX)
 						{
-							dst->en_flag = true;
+							if (dst->en_flag == 0xff)
+							{
+								dst->en_flag = 1;
+							}
+							else
+							{
+								dst->en_flag++;
+							}
+							
 							dst->layer_total = total;
 
 
-							for (uint8_t i = 0; i < LED_TOTAL; i++)
+							for (uint16_t i = 0; i < LED_TOTAL; i++)
 							{
 								dst->info[i] = app_pack.payload[i+2];
 							}
@@ -1429,7 +1504,7 @@ void App_data_prcoess(void)
 							for (uint8_t i = 0; i < total; i++)
 							{
 								dst->head[i] = 0xffff;
-								for (uint8_t j = 0; j < LED_TOTAL; j++)
+								for (uint16_t j = 0; j < LED_TOTAL; j++)
 								{
 									if (dst->head[i] == 0xffff && dst->info[j] == i)
 									{
