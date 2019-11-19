@@ -70,7 +70,7 @@ extern "C"  SYS_status sys_connect_status_hanle();
 extern "C"	int sys_cmd_handle(size_t net,u8 cmd,u8*p_data,int recv_len,M2M_packet_T **pp_ack_data);
 
 int sys_eeprom_factory_reset(void);
-
+bool _sys_in_smartconfiging(void);
 int sys_host_config(size_t net,u8 *p_data, int recv_len);
 
 // function
@@ -259,7 +259,9 @@ void sys_wifi_init(void){
 				sprintf(ssid, "%s%02x%02x", SOFTAP_SSID_,mac[4],mac[5]);
 				m2m_log_debug("ssid is : %s", ssid);
 				
-				if( WiFi.softAP(ssid)){
+				sys_wifi_mode_set(WIFI_MODE_RST_SMT);				
+				sys_conf.wifi_mod = WIFI_MODE_RST_AP;
+				if(WiFi.softAP(ssid)){
 					m2m_log_debug("Ready");
 				}else m2m_log_debug("failt");
 
@@ -368,15 +370,13 @@ void  sys_factory_reset(void){
     
 	if(0 == digitalRead(REST_PIN)){
 		u32 curr_tm = m2m_current_time_get();
-		if(DIFF( curr_tm,last_tm ) > (resttime - 400) ){
+		if( DIFF( curr_tm,last_tm ) > (resttime - 400) ){
 
 		//	WiFi.disconnect();
 		//	WiFi.setAutoConnect(false);
 			sys_eeprom_factory_reset();
-
 	//		mmemset( sys_conf.p_ssid_pw, 0,  64);
-			
-			if( sys_conf.wifi_mod == WIFI_MODE_RST_SMT ){
+			if( _sys_in_smartconfiging() && sys_conf.wifi_mod == WIFI_MODE_RST_SMT ){
 				sys_wifi_mode_set(WIFI_MODE_RST_AP);
 			}else{
 				sys_wifi_mode_set(WIFI_MODE_RST_SMT);
@@ -440,8 +440,10 @@ void sys_sta_smartconf_end(void){
 			g_sys_cnn = SYS_ONLINE;
 			sys_conf.wifi_mod = WIFI_MODE_STA_SMT;
 			sys_eeprom_write( EEPROM_CONF_ADDRESS, (u8*)&sys_conf, sizeof(EEPROM_conf_T));
+			
+
 		}else{
-			// import..
+						// import..
 			if(g_wifi_configing){
 				delay(200);		
 			}
@@ -452,7 +454,13 @@ void sys_sta_smartconf_end(void){
 	}	
 }
 
-
+bool _sys_in_smartconfiging(void){
+	u32 curr_tm = m2m_current_time_get();
+	if(DIFF(curr_tm, g_smartconfiging_time) < MAX_SMARTCONFIG_TIME)
+		return TRUE;
+	else
+		return FALSE;
+}
 void sys_sta_smartconf_stop(void){
 	u32 curr_tm = m2m_current_time_get();
 	if(g_sys_cnn == SYS_CONFIGING_STA && curr_tm > g_smartconfiging_time && DIFF(curr_tm, g_smartconfiging_time) > MAX_SMARTCONFIG_TIME ){
