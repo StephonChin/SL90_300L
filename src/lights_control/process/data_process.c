@@ -928,7 +928,7 @@ void App_data_prcoess(void)
 	}
 
 	//receive data from APP
-	else if (app_pack.type == PRODUCT_TYPE)
+	else if (app_pack.type == PRODUCT_TYPE || app_pack.type == PRODUCT_TYPE_GENERAL)
 	{
 		//m2m_printf("===== p = %p\n", app_pack);
 		//check the app pack update
@@ -939,8 +939,7 @@ void App_data_prcoess(void)
 
 
 			//if the type or the protocol version is mismatch
-			if ((app_pack.type != PRODUCT_TYPE)
-			|| (app_pack.ver != APP_PROTOCOL_VER))
+			if (app_pack.ver != APP_PROTOCOL_VER)
 			{
 				app_pack.index = 0;
 				//printf("==ERROR==version or type mismath!");

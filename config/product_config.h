@@ -26,6 +26,6 @@
 /* 版本 */
 #define VERSION_MAJOR   0
 #define VERSION_MINOR   2
-#define VERSION_PATCH   20
+#define VERSION_PATCH   21
                                                                  
 #endif

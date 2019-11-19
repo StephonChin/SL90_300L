@@ -26,6 +26,7 @@
 #include "../../include/util.h"
 
 /* product information */
+#define		PRODUCT_TYPE_GENERAL			(uint8_t)0x0
 #define     PRODUCT_TYPE            		(uint8_t)0x01
 #define     APP_PROTOCOL_VER            	(uint8_t)0x01
 #define     VOICE_PROTOCOL_VER            	(uint8_t)0x55
