@@ -305,7 +305,7 @@ void User_Data_Init(void)
 
 			if (!err_flag)
 			{
-				for (uint8_t i = 0; i < LAYER_MAX; i++)
+				for (uint8_t i = 0; i < vertical_layer.layer_total; i++)
 				{
 					if (vertical_layer.head[i] >= LED_TOTAL)
 					{
@@ -347,7 +347,7 @@ void User_Data_Init(void)
 
 			if (!err_flag)
 			{
-				for (uint8_t i = 0; i < LAYER_MAX; i++)
+				for (uint8_t i = 0; i < triangle_layer.layer_total; i++)
 				{
 					if (triangle_layer.head[i] >= LED_TOTAL)
 					{
@@ -389,7 +389,7 @@ void User_Data_Init(void)
 
 			if (!err_flag)
 			{
-				for (uint8_t i = 0; i < LAYER_MAX; i++)
+				for (uint8_t i = 0; i < fan_layer.layer_total; i++)
 				{
 					if (fan_layer.head[i] >= LED_TOTAL)
 					{

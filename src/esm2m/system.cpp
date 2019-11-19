@@ -259,7 +259,8 @@ void sys_wifi_init(void){
 				sprintf(ssid, "%s%02x%02x", SOFTAP_SSID_,mac[4],mac[5]);
 				m2m_log_debug("ssid is : %s", ssid);
 				
-				sys_wifi_mode_set(WIFI_MODE_RST_SMT);				
+				sys_wifi_mode_set(WIFI_MODE_RST_SMT);	
+				delay(50);
 				sys_conf.wifi_mod = WIFI_MODE_RST_AP;
 				if(WiFi.softAP(ssid)){
 					m2m_log_debug("Ready");
@@ -538,6 +539,9 @@ void sys_setup(void){
 			sys_eeprom_factory_reset();
 			sys_wifi_mode_set(WIFI_MODE_RST_SMT);
 		}
+		// reset counter.·
+		sys_conf.reset_cnt++;
+		sys_eeprom_write( EEPROM_CONF_ADDRESS, (u8*)&sys_conf,  sizeof(EEPROM_conf_T));
 		sys_wifi_init();
 
 	}else
@@ -545,9 +549,7 @@ void sys_setup(void){
 		m2m_setup();
 		g_sys_cnn = SYS_LOST_CONNECT;
 	}
-	// reset counter.·
-	sys_conf.reset_cnt++;
-	sys_eeprom_write( EEPROM_CONF_ADDRESS, (u8*)&sys_conf,  sizeof(EEPROM_conf_T));
+	
 	
 }
 
