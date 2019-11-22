@@ -578,21 +578,6 @@ int sys_ssid_pw_reset(LM2M_router_conf *p_router){
 	m2m_log("ssid:%s,pwd:%s,\r\n",ssid,pwd);
 	WiFi.mode(WIFI_STA);
 	WiFi.begin(ssid,pwd);
-#if 0
-	u32 curr_tm = m2m_current_time_get()+30*1000;
-	 while(WiFi.status() != WL_CONNECTED){
-			delay(10);
-	   if(DIFF_(millis(),last_tm ) > 1500){
-	    flag = flag ==0 ? 1:0; 
-	    digitalWrite( LED_WIFI_CONN_PIN, flag);
-	    last_tm = millis();
-  	  }
-		
-	if( m2m_current_time_get()>curr_tm ){
-			break;
-		}
-	}
-#endif
 	//m2m_printf("\n--->ssid and password is %s\n", p_router->p_ssid_pw);
 #if 1
 	m2m_log("connect successs!\r\n");
@@ -605,6 +590,7 @@ int sys_ssid_pw_reset(LM2M_router_conf *p_router){
 	sys_eeprom_write( EEPROM_CONF_ADDRESS, (u8*)&sys_conf, sizeof(EEPROM_conf_T));
 	free(ssid);
 	free(pwd);
+	g_reboot = 1;
 //	sys_conf.wifi_mod = old_wifi_mod;
 #endif
 
@@ -801,6 +787,9 @@ void system_loop(void){
 
 	//if reset 
 	if(g_reboot){
-		ESP.restart();
+		if(g_reboot++ > 5){
+			g_reboot = 0;
+            ESP.restart();
+        }
 	}
 }

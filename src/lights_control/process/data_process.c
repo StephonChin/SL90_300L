@@ -819,8 +819,12 @@ void Mcu_com_process(void)
 
 					MusicUpdateFlag = true;
 
-					LayerStep = (mcu_rcv_pack.cmd - 0x10);
-					if (LayerStep > vertical_layer.layer_total)	LayerStep = vertical_layer.layer_total;
+					uint16_t x = (uint16_t)(mcu_rcv_pack.cmd - 0x10);
+					x = x * (uint16_t)(vertical_layer.layer_total - 1);
+
+					LayerStep = (uint8_t)(x / 16);
+
+					if (LayerStep >= vertical_layer.layer_total)	LayerStep = vertical_layer.layer_total - 1;
 				}
 			}
 			len_pre = 0;

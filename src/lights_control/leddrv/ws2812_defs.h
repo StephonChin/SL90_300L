@@ -20,7 +20,7 @@
 
 // -----------------------------------------------------
 // I2S timing parameters 
-#define WS_I2S_BCK          (32)               // >=18
+#define WS_I2S_BCK          (28)               // >=18
 #define WS_I2S_DIV          (13)               // >= 13
 
 
