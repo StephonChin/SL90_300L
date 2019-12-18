@@ -1,5 +1,8 @@
-	/*********************************************************
-** sample 
+/*********************************************************
+
+20191218: Change:   sta 模式 绿灯， 快闪表示 正在配置或者 升级固件，慢闪表示 断开外网  常亮表示连接上路由和外网服务器
+				    AP 模式  蓝灯常亮
+**  
 *********************************************************/
 #include <string.h>
 #include "Arduino.h"
@@ -14,16 +17,24 @@
 
 #define DIFF(a,b) ((a>b)?(a-b):(b-a))
 
+typedef enum _LED_COLOR{
+	LED_R ,
+	LED_G,
+	LED_B
+}LED_COLOR;
 
 void board_gpio_init(void){
-	Led_Program_Config();
 
 	randomSeed(analogRead(0));
-	// Serial.flush();
-	// Serial.begin(9600);
-	// Serial.flush();
-	pinMode(LED_WIFI_CONN_PIN, OUTPUT);
+
+	pinMode(LED_R_PIN, OUTPUT);
+	pinMode(LED_G_PIN, OUTPUT);
+	pinMode(LED_B_PIN, OUTPUT);
 	pinMode(REST_PIN, INPUT);
+	
+	digitalWrite(LED_R_PIN, 1);
+	digitalWrite(LED_G_PIN, 1);
+	digitalWrite(LED_B_PIN, 1);
 }
 
 // void board_uart_report_status(int stat){
@@ -152,14 +163,46 @@ int board_fact_cmd_handle(M2M_packet_T **pp_ack_data){
 }
 
 #endif
-static void board_led_flash(void){
+
+static void board_led_flash(LED_COLOR color){
 	static u8 led_status = 0;
 	
 	led_status = (led_status)?0:1;
-	digitalWrite(LED_WIFI_CONN_PIN,led_status);
+	switch(color){
+		case LED_R:
+			digitalWrite(LED_R_PIN, led_status);
+			break;
+		case LED_G:
+			digitalWrite(LED_G_PIN, led_status);
+			break;
+		case LED_B:
+			digitalWrite(LED_B_PIN, led_status);
+			break;
+		default:
+			return;
+	}
+
 	
 }
-
+void board_led_color(LED_COLOR color, int status){
+	int r = 1, g =1, b=1;
+	switch(color){
+		case LED_R:
+			r = status;
+			break;
+		case LED_G:
+			g = status;
+			break;
+		case LED_B:
+			b = status;
+			break;
+		default:
+			return;
+	}
+	digitalWrite(LED_R_PIN,r);
+	digitalWrite(LED_G_PIN, g);
+	digitalWrite(LED_B_PIN, b);
+}
 /**
 **	系统状态函数.
 **/
@@ -177,31 +220,30 @@ void board_led_status(SYS_status status){
 		case SYS_OTAING:
 			if( DIFF(old_tm, c_time ) >= 300){
 				old_tm = c_time;
-				board_led_flash();
+				board_led_flash(LED_G);
 			}
 			break;
 		
 		case SYS_CONFIGING_STA://在STA模式下 快闪
 			if( DIFF(old_tm, c_time ) >= 250){
 				old_tm = c_time;
-				board_led_flash();
+				board_led_flash(LED_G);
 			}
 			break;
 
 		case SYS_CONFIGING_AP://在AP模式下 慢闪
-			if( DIFF(old_tm, c_time ) >= 1300){
-				old_tm = c_time;
-
-				board_led_flash();
-			}
+			board_led_color(LED_B, 0);
 			break;
 
 		case SYS_LOST_CONNECT://没连接路由 灭
-			digitalWrite(LED_WIFI_CONN_PIN,1);
+			if( DIFF(old_tm, c_time ) >= 1300){
+					old_tm = c_time;
+					board_led_flash(LED_G);
+				}
 			break;
 
 		case SYS_ONLINE://在线常亮
-			digitalWrite( LED_WIFI_CONN_PIN,0);
+			board_led_color(LED_G, 0);
 			break;
 	}
 

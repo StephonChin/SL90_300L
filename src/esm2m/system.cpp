@@ -83,7 +83,7 @@ led_flash
 void led_flash()                        //中断处理函数，改变灯的状态
 {                        
   static boolean output = HIGH;
-  digitalWrite(LED_WIFI_CONN_PIN, output);
+  digitalWrite(LED_G_PIN, output);
   output = !output;
 }
 

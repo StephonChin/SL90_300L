@@ -21,6 +21,12 @@ extern "C"{
 #define BOARD_ESP_8266
 // led
 #define LED_WIFI_CONN_PIN  16//16//5
+
+#define LED_R_PIN  16//16//5
+#define LED_G_PIN  14//16//5
+#define LED_B_PIN  12//16//5
+
+
 // factory rest key.
 #define REST_PIN	5// 5
 #define FAC_TEST_PIN	12
