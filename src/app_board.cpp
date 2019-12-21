@@ -20,7 +20,10 @@
 typedef enum _LED_COLOR{
 	LED_R ,
 	LED_G,
-	LED_B
+	LED_B,
+	LED_O ,
+	LED_P,
+	
 }LED_COLOR;
 
 void board_gpio_init(void){
@@ -181,10 +184,10 @@ static void board_led_flash(LED_COLOR color){
 		default:
 			return;
 	}
-
 	
 }
-void board_led_color(LED_COLOR color, int status){
+void board_led_color(LED_COLOR color){
+	int status = 0;
 	int r = 1, g =1, b=1;
 	switch(color){
 		case LED_R:
@@ -194,6 +197,14 @@ void board_led_color(LED_COLOR color, int status){
 			g = status;
 			break;
 		case LED_B:
+			b = status;
+			break;
+		case LED_O:
+			r = status;
+			g = status;
+			break;
+		case LED_P:
+			r = status;
 			b = status;
 			break;
 		default:
@@ -218,32 +229,23 @@ void board_led_status(SYS_status status){
 	switch(status){
 		
 		case SYS_OTAING:
-			if( DIFF(old_tm, c_time ) >= 300){
-				old_tm = c_time;
-				board_led_flash(LED_G);
-			}
+			board_led_color(LED_P);
 			break;
 		
 		case SYS_CONFIGING_STA://在STA模式下 快闪
-			if( DIFF(old_tm, c_time ) >= 250){
-				old_tm = c_time;
-				board_led_flash(LED_G);
-			}
+			board_led_color(LED_B);
 			break;
 
 		case SYS_CONFIGING_AP://在AP模式下 慢闪
-			board_led_color(LED_B, 0);
+			board_led_color(LED_O);
 			break;
 
 		case SYS_LOST_CONNECT://没连接路由 灭
-			if( DIFF(old_tm, c_time ) >= 1300){
-					old_tm = c_time;
-					board_led_flash(LED_G);
-				}
+			board_led_color(LED_B);
 			break;
 
 		case SYS_ONLINE://在线常亮
-			board_led_color(LED_G, 0);
+			board_led_color(LED_G);
 			break;
 	}
 

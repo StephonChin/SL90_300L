@@ -377,7 +377,7 @@ void  sys_factory_reset(void){
 		//	WiFi.setAutoConnect(false);
 			sys_eeprom_factory_reset();
 	//		mmemset( sys_conf.p_ssid_pw, 0,  64);
-			if( _sys_in_smartconfiging() && sys_conf.wifi_mod == WIFI_MODE_RST_SMT ){
+			if( sys_conf.wifi_mod == WIFI_MODE_RST_SMT ){
 				sys_wifi_mode_set(WIFI_MODE_RST_AP);
 			}else{
 				sys_wifi_mode_set(WIFI_MODE_RST_SMT);
@@ -455,18 +455,10 @@ void sys_sta_smartconf_end(void){
 	}	
 }
 
-bool _sys_in_smartconfiging(void){
-	u32 curr_tm = m2m_current_time_get();
-	if(DIFF(curr_tm, g_smartconfiging_time) < MAX_SMARTCONFIG_TIME)
-		return TRUE;
-	else
-		return FALSE;
-}
 void sys_sta_smartconf_stop(void){
 	u32 curr_tm = m2m_current_time_get();
-	if(g_sys_cnn == SYS_CONFIGING_STA && curr_tm > g_smartconfiging_time && DIFF(curr_tm, g_smartconfiging_time) > MAX_SMARTCONFIG_TIME ){
-			WiFi.stopSmartConfig();
-      g_sys_cnn = SYS_LOST_CONNECT;
+	if(g_sys_cnn == SYS_CONFIGING_STA && curr_tm > g_smartconfiging_time ){
+      		g_sys_cnn = SYS_LOST_CONNECT;
 			g_wifi_configing = 0;
 	}
 }
@@ -773,7 +765,7 @@ void system_loop(void){
 		mfree(p_g_ota_url);
 		p_g_ota_url = NULL;
 	}
-	sys_sta_smartconf_stop();
+	//sys_sta_smartconf_stop();
 	sys_sta_smartconf_end();
 	
 	//指示灯控制.
